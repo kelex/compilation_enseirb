@@ -69,7 +69,7 @@
 #line 1 "grammar.y"
 
 	#include <stdio.h>
-#include "constants.c"
+	#include "struct.h"
 	extern int yylineno;
 	int yylex ();
 	int yyerror ();
@@ -1656,14 +1656,14 @@ yyreduce:
 
 /* Line 1806 of yacc.c  */
 #line 68 "grammar.y"
-    {(yyval.node)=(yyvsp[(3) - (3)].node);}
+    {(yyval.node)=(yyvsp[(3) - (3)].node);delete_node((yyvsp[(1) - (3)].node));}
     break;
 
   case 21:
 
 /* Line 1806 of yacc.c  */
 #line 69 "grammar.y"
-    {(yyval.node)=(yyvsp[(3) - (3)].node);}
+    {(yyval.node)=(yyvsp[(3) - (3)].node);delete_node((yyvsp[(1) - (3)].node));}
     break;
 
   case 22:
@@ -1677,14 +1677,14 @@ yyreduce:
 
 /* Line 1806 of yacc.c  */
 #line 74 "grammar.y"
-    {(yyval.node)=(yyvsp[(1) - (3)].node);}
+    {(yyval.node)=(yyvsp[(1) - (3)].node);delete_node((yyvsp[(3) - (3)].node));}
     break;
 
   case 24:
 
 /* Line 1806 of yacc.c  */
 #line 75 "grammar.y"
-    {(yyval.node)=(yyvsp[(1) - (3)].node);}
+    {(yyval.node)=(yyvsp[(1) - (3)].node);delete_node((yyvsp[(3) - (3)].node));}
     break;
 
   case 25:
@@ -1698,55 +1698,62 @@ yyreduce:
 
 /* Line 1806 of yacc.c  */
 #line 80 "grammar.y"
-    {(yyval.node) = (yyvsp[(1) - (3)].node);}
+    {(yyval.node) = (yyvsp[(1) - (3)].node);delete_node((yyvsp[(3) - (3)].node));}
     break;
 
   case 27:
 
 /* Line 1806 of yacc.c  */
 #line 81 "grammar.y"
-    {(yyval.node) = (yyvsp[(1) - (3)].node);}
+    {(yyval.node) = (yyvsp[(1) - (3)].node);delete_node((yyvsp[(3) - (3)].node));}
     break;
 
   case 28:
 
 /* Line 1806 of yacc.c  */
 #line 82 "grammar.y"
-    {(yyval.node) = (yyvsp[(1) - (3)].node);}
+    {(yyval.node) = (yyvsp[(1) - (3)].node);delete_node((yyvsp[(3) - (3)].node));}
     break;
 
   case 29:
 
 /* Line 1806 of yacc.c  */
 #line 83 "grammar.y"
-    {(yyval.node) = (yyvsp[(1) - (3)].node);}
+    {(yyval.node) = (yyvsp[(1) - (3)].node);delete_node((yyvsp[(3) - (3)].node));}
     break;
 
   case 30:
 
 /* Line 1806 of yacc.c  */
 #line 84 "grammar.y"
-    {(yyval.node) = (yyvsp[(1) - (3)].node);}
+    {(yyval.node) = (yyvsp[(1) - (3)].node);delete_node((yyvsp[(3) - (3)].node));}
     break;
 
   case 31:
 
 /* Line 1806 of yacc.c  */
 #line 85 "grammar.y"
-    {(yyval.node) = (yyvsp[(1) - (3)].node);}
+    {(yyval.node) = (yyvsp[(1) - (3)].node);delete_node((yyvsp[(3) - (3)].node));}
     break;
 
   case 32:
 
 /* Line 1806 of yacc.c  */
 #line 89 "grammar.y"
-    {printNode((yyvsp[(1) - (3)].node),(yyvsp[(3) - (3)].node));}
+    {printNode((yyvsp[(1) - (3)].node),(yyvsp[(3) - (3)].node));delete_node((yyvsp[(1) - (3)].node));delete_node((yyvsp[(3) - (3)].node));}
+    break;
+
+  case 33:
+
+/* Line 1806 of yacc.c  */
+#line 90 "grammar.y"
+    {delete_node((yyvsp[(1) - (1)].node));}
     break;
 
 
 
 /* Line 1806 of yacc.c  */
-#line 1750 "y.tab.c"
+#line 1757 "y.tab.c"
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -2458,7 +2465,6 @@ void footer(){
 		printf(" declare %%struct.trackSeg* @get_track_seg_next(%%struct.trackSeg*)\n");
 		printf(" declare float @get_car_yaw(%%struct.CarElt*)\n");
 		printf(" \n");
-		printf(" }\n");
 	}
 
 

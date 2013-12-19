@@ -3,12 +3,12 @@ YACC=yacc
 CFLAGS=-Wall
 CC=gcc
 
-all: constants.o parse
+all: struct.o parse
 
-parse:y.tab.c lex.yy.c
+parse:y.tab.c lex.yy.c struct.h
 	$(CC) $(CFLAGS) -o $@ $^
 
-constants.o:constants.c
+struct.o:struct.c
 	 $(CC) -o $@ $(CFLAGS) -c $<
 
 y.tab.c:grammar.y
@@ -19,3 +19,4 @@ lex.yy.c:scanner.l
 
 clean:
 	rm -f grammar.c scanner.c
+	rm -f *.o

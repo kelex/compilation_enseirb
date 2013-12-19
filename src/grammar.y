@@ -1,6 +1,6 @@
 %{
 	#include <stdio.h>
-#include "constants.c"
+	#include "struct.h"
 	extern int yylineno;
 	int yylex ();
 	int yyerror ();
@@ -65,29 +65,29 @@ unary_operator
 
 multiplicative_expression
 : unary_expression	{$$=$1;}
-| multiplicative_expression '*' unary_expression	{$$=$3;}
-| multiplicative_expression '/' unary_expression	{$$=$3;}
+| multiplicative_expression '*' unary_expression	{$$=$3;delete_node($1);}
+| multiplicative_expression '/' unary_expression	{$$=$3;delete_node($1);}
 ;
 
 additive_expression
 : multiplicative_expression {$$=$1;}
-| additive_expression '+' multiplicative_expression	{$$=$1;}
-| additive_expression '-' multiplicative_expression	{$$=$1;}
+| additive_expression '+' multiplicative_expression	{$$=$1;delete_node($3);}
+| additive_expression '-' multiplicative_expression	{$$=$1;delete_node($3);}
 ;
 
 comparison_expression
 : additive_expression	{$$=$1;}
-| additive_expression '<' additive_expression	{$$ = $1;}
-| additive_expression '>' additive_expression	{$$ = $1;}
-| additive_expression LE_OP additive_expression	{$$ = $1;}
-| additive_expression GE_OP additive_expression	{$$ = $1;}
-| additive_expression EQ_OP additive_expression	{$$ = $1;}
-| additive_expression NE_OP additive_expression	{$$ = $1;}
+| additive_expression '<' additive_expression	{$$ = $1;delete_node($3);}
+| additive_expression '>' additive_expression	{$$ = $1;delete_node($3);}
+| additive_expression LE_OP additive_expression	{$$ = $1;delete_node($3);}
+| additive_expression GE_OP additive_expression	{$$ = $1;delete_node($3);}
+| additive_expression EQ_OP additive_expression	{$$ = $1;delete_node($3);}
+| additive_expression NE_OP additive_expression	{$$ = $1;delete_node($3);}
 ;
 
 expression
-: unary_expression assignment_operator comparison_expression {printNode($1,$3);}
-| comparison_expression
+: unary_expression assignment_operator comparison_expression {printNode($1,$3);delete_node($1);delete_node($3);}
+| comparison_expression {delete_node($1);}
 ;
 
 assignment_operator
@@ -668,7 +668,6 @@ void footer(){
 		printf(" declare %%struct.trackSeg* @get_track_seg_next(%%struct.trackSeg*)\n");
 		printf(" declare float @get_car_yaw(%%struct.CarElt*)\n");
 		printf(" \n");
-		printf(" }\n");
 	}
 
 
