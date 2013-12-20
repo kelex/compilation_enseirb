@@ -1,0 +1,13 @@
+;
+;   file                 : enseirbot.def
+;   created              : vendredi 20 décembre 2013, 01:58:24 (UTC+0100)
+;   copyright            : (C) 2002 KLG
+;
+
+LIBRARY	enseirbot
+
+SECTIONS .data READ WRITE
+
+EXPORTS
+	enseirbot
+

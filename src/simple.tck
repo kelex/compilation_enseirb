@@ -1,4 +1,4 @@
 void driver()
 {
-	$accelaze = 1;
+	$accel = 2;
 }

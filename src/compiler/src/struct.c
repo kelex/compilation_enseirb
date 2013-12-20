@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+extern FILE * output;
 
 void debugNode(struct node_t * n){
 		switch(n->type){
@@ -27,7 +28,8 @@ void debugNode(struct node_t * n){
 void printNode(struct node_t * n1, struct node_t * n2){
 	if(n1->type == STR){
 		char accel[] = "$accel";
-		if(!strcmp(accel,n1->x.s)){
+		char * curr = n1->x.s;
+		if(!strcmp(accel,curr)){
 			float tmp = 0.0;
 			if(n2->type == INTEGER){
 				tmp = n2->x.i;
@@ -36,10 +38,16 @@ void printNode(struct node_t * n1, struct node_t * n2){
 				tmp = n2->x.f;
 			}
 			else {
-				yyerror("float or int value expected.");
+				yyerror("float or int value expected.\n");
 				exit(-1);
 			}
-			printf("store float %f, float* %%accelCmd\n",tmp);
+			if(tmp >= 0 && tmp <= 1)
+				fprintf(output,"store double  0x%8.8X, double* %%accelCmd\n",*((long*)&tmp));
+			else{
+				fprintf(output,"---------ERROR----------\n");
+				yyerror("$accel : Value between 0 and 1 expected.");
+				exit(-1);
+			}
 		}
 	}
 }
@@ -69,21 +77,10 @@ void delete_node(struct node_t * n){
 }
 
 struct node_t * construct_node(type_t t){
-	printf("CONSTRUCT NODE : %d\n",t );
+	// printf("CONSTRUCT NODE : %d\n",t );
 	struct node_t * new_node = malloc(sizeof(node_t));
 	new_node->type = t;
 	return new_node;
 
 }
 
-
-void testaaaa(const char * s)
-{
-	char accel[] = "$accel";
-	if(!strcmp(accel,s))
-		printf("store float 0.750000e+00, float* %%accelCmd");
-	else{
-		yyerror("Undefined token (!= $accel) EXIT");
-		exit(2);
-	}
-}

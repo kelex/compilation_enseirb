@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    file                 : enseirbot.xml
+    created              : vendredi 20 décembre 2013, 01:58:24 (UTC+0100)
+    copyright            : (C) 2002 KLG
+-->
+
+<!DOCTYPE params SYSTEM "../../libs/tgf/params.dtd">
+<params name="enseirbot" type="robotdef">
+  <section name="Robots">
+    <section name="index">
+      <section name="1">
+	<attstr name="name" val="enseirbot"></attstr>
+	<attstr name="desc" val=""></attstr>
+	<attstr name="team" val=""></attstr>
+	<attstr name="author" val="KLG"></attstr>
+	<attstr name="car name" val="kc-daytona"></attstr>
+	<attstr name="category" val="Historic"></attstr>
+	<attnum name="race number" val="0"></attnum>
+	<attnum name="red" val="1.0"></attnum>
+	<attnum name="green" val="1.0"></attnum>
+	<attnum name="blue" val="1.0"></attnum>
+      </section>
+    </section>
+  </section>
+</params>

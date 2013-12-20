@@ -277,7 +277,7 @@ target triple = "x86_64-unknown-linux-gnu"%struct.CarElt = type {
 
 %struct.tCarCtrl = type {
      float,
-     float,
+     double,
      float,
      float,
      i32,
@@ -409,32 +409,7 @@ target triple = "x86_64-unknown-linux-gnu"%struct.CarElt = type {
      i64
 }
 
-define void @drive(i32 %index, %struct.CarElt* %car, %struct.Situation* %s) {
-     %ctrl       = getelementptr %struct.CarElt* %car, i32 0, i32 5
-     %public_car = getelementptr %struct.CarElt* %car, i32 0, i32 2
-     %pos        = getelementptr %struct.tPublicCar* %public_car, i32 0, i32 3
-     %seg.addr   = getelementptr %struct.tTrkLocPos* %pos, i32 0, i32 0
-     %seg        = load %struct.trackSeg** %seg.addr
 
-     %steer      = getelementptr %struct.tCarCtrl* %ctrl, i32 0, i32 0
-     %accelCmd   = getelementptr %struct.tCarCtrl* %ctrl, i32 0, i32 1
-     %brakeCmd   = getelementptr %struct.tCarCtrl* %ctrl, i32 0, i32 2
-     %clutchCmd  = getelementptr %struct.tCarCtrl* %ctrl, i32 0, i32 3
-     %gear       = getelementptr %struct.tCarCtrl* %ctrl, i32 0, i32 4
-
-     %road_angle = call float @get_track_angle(%struct.tTrkLocPos* %pos)
-     %car_angle  = call float @get_car_yaw(%struct.CarElt* %car)
-     %angle      = fsub float %road_angle, %car_angle
-     %nangle     = call float @norm_pi_pi(float %angle)
-
-     %posmid     = call float @get_pos_to_middle(%struct.tTrkLocPos* %pos)
-     %width      = call float @get_track_seg_width(%struct.trackSeg* %seg)
-     %corr       = fdiv float %posmid, %width
-     %cangle     = fsub float %nangle, %corr
-store float 1.000000, float* %accelCmd
-     ret void;
- }
- 
  declare float @norm_pi_pi(float %a)
  declare float @get_track_angle(%struct.tTrkLocPos*)
  declare float @get_pos_to_right(%struct.tTrkLocPos*)
@@ -451,4 +426,3 @@ store float 1.000000, float* %accelCmd
  declare float @get_track_seg_arc(%struct.trackSeg*)
  declare %struct.trackSeg* @get_track_seg_next(%struct.trackSeg*)
  declare float @get_car_yaw(%struct.CarElt*)
- 
