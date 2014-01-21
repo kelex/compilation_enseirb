@@ -1,5 +1,7 @@
 %{
 	#include <stdio.h>
+	#include <stdlib.h>
+	#include <glib.h>
 	#include "./struct.h"
 	extern int yylineno;
 
@@ -7,6 +9,9 @@
 
 	int yylex ();
 	int yyerror ();
+
+	GHashTable *var_scope = NULL;
+	GHashTable *fun_scope = NULL;
 
 %}
 
@@ -18,6 +23,7 @@
 	char * s;
 	struct node_t * node;
 }
+
 %token <s> IDENTIFIER
 %token <f> CONSTANTF
 %token <i> CONSTANTI
@@ -296,6 +302,16 @@ int main (int argc, char *argv[]) {
 		usage(*argv);
 		return 1;
 	}
+
+var_scope = g_hash_table_new_full (g_str_hash,  /* Hash function  */
+                           g_str_equal, /* Comparator     */
+                           free,   /* Key destructor */
+                           delete_node);  /* Val destructor */
+fun_scope = g_hash_table_new_full (g_str_hash,  /* Hash function  */
+                           g_str_equal, /* Comparator     */
+                           free,   /* Key destructor */
+                           delete_node);  /* Val destructor */
+
 	header();
 	yyparse ();
 	footer();

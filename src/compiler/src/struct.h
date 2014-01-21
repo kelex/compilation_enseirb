@@ -15,6 +15,7 @@ struct node_t{
 		float f;
 		char * s;
 	} x;
+	char * code;
 
 } node_t;
 

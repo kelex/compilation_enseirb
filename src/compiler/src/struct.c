@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+
+
 extern FILE * output;
 
 void debugNode(struct node_t * n){
