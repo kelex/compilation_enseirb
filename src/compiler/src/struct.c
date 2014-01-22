@@ -28,6 +28,7 @@ char * autoAlloc(const char * fmt, ...) {
 void _node_const_init(){
 typeString[0] = "i32";
 typeString[1] = "double";
+typeString[2] = "void";
 }
 
 void debugNode(struct node_t * n){
@@ -44,6 +45,8 @@ void debugNode(struct node_t * n){
 		case STR:
 		printf("STR(%s)\n",n->x.s);
 		break;
+		case VOID:
+		printf("VOID\n")
 		default:
 		printf("BUGGY\n");
 	}
@@ -98,7 +101,8 @@ void update_node(struct node_t * n, void * val){
 		n->x.s = (char *) val;
 		n->valStr = n->x.s;
 		break;
-	default:;
+	default:
+		exit(-1);
 	}
 }
 

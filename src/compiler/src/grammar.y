@@ -149,7 +149,9 @@ assignment_operator
 ;
 
 declaration
-: type_name declarator_list ';'
+: type_name declarator_list ';' {
+									struct node_t * n = g_hash_table_lookup()
+								}
 ;
 
 declarator_list
@@ -158,7 +160,7 @@ declarator_list
 ;
 
 type_name
-: VOID  
+: VOID  {$$ = cons}
 | INT   
 | FLOAT
 ;
