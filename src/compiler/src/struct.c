@@ -45,8 +45,8 @@ void debugNode(struct node_t * n){
 		case STR:
 		printf("STR(%s)\n",n->x.s);
 		break;
-		case VOID:
-		printf("VOID\n");
+		case EMPTY:
+		printf("EMPTY\n");
 		default:
 		printf("BUGGY\n");
 	}

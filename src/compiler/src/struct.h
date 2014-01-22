@@ -11,7 +11,7 @@ char * autoAlloc(const char * fmt, ...);
 typedef enum {
 	INTEGER = 0,
 	REAL = 1,
-	VOID = 3,
+	EMPTY = 3,
 	STR = 4,
 	NODE = 5,
 }type_t;

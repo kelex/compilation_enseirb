@@ -14,7 +14,7 @@ int exitError(char *s);
 
 
 	unsigned int N = 0;
-	type_t current_type  = VOID;
+	type_t current_type  = EMPTY;
 
 	GHashTable *var_scope = NULL;
 	GHashTable *fun_scope = NULL;
@@ -42,7 +42,7 @@ int exitError(char *s);
 %token INT
 %token FLOAT
 %token VOID
-%type <node> primary_expression postfix_expression unary_expression multiplicative_expression additive_expression comparison_expression
+%type <node> declarator primary_expression postfix_expression unary_expression multiplicative_expression additive_expression comparison_expression
 %token IF ELSE WHILE RETURN FOR
 
 %start program
@@ -133,7 +133,9 @@ expression
 					case INTEGER:
 						node = $1;
 						val = $1->valStr;
+						break;				
 				}
+				
 
 				if(!node) exitError("Variable doesn't exist");
 				fprintf(output,"store %s %s, %s* %s\n",typeString[node->type],$3->valStr,typeString[node->type],val);
@@ -143,7 +145,7 @@ expression
 ;
 
 assignment_operator
-: '='
+: '='   {}
 | MUL_ASSIGN
 | ADD_ASSIGN
 | SUB_ASSIGN
@@ -151,28 +153,32 @@ assignment_operator
 
 declaration
 : type_name declarator_list ';' {
+									printf("DECLARATION\n");
 									//struct node_t * n = g_hash_table_lookup();
 								}
 ;
 
 declarator_list
-: declarator  {}
-| declarator_list ',' declarator
+: declarator    {if (current_type==EMPTY){
+					exitError("Void variable does not exist");
+				}
+				g_hash_table_insert(var_scope,$1->valStr,construct_node(current_type));}
+| declarator_list ',' declarator {g_hash_table_insert(var_scope,$3->valStr,construct_node(current_type));}
 ;
 
 type_name
-: VOID  {}
-| INT   
-| FLOAT
+: VOID  {current_type = EMPTY;}
+| INT   {current_type = INTEGER;}
+| FLOAT {current_type = REAL;}
 ;
 
 declarator
-: IDENTIFIER  
-| '(' declarator ')'
-| declarator '[' CONSTANTI ']'
-| declarator '[' ']'
-| declarator '(' parameter_list ')'
-| declarator '(' ')'
+: IDENTIFIER  						{$$ = construct_node(STR);update_node($$,$1);}
+| '(' declarator ')'				{$$ = construct_node(STR);update_node($$,$2);}
+| declarator '[' CONSTANTI ']'		{$$ = construct_node(STR);update_node($$,$1);}
+| declarator '[' ']'				{$$ = construct_node(STR);update_node($$,$1);}
+| declarator '(' parameter_list ')'	{$$ = construct_node(STR);update_node($$,$1);}
+| declarator '(' ')'				{$$ = construct_node(STR);update_node($$,$1);}
 ;
 
 parameter_list
@@ -330,7 +336,6 @@ void footer(){
 void usage(char * name){
 	fprintf(stderr,"Usage : %s <input> <output>\n",name);
 }
-
 
 int main (int argc, char *argv[]) {
 	FILE *input = NULL;
