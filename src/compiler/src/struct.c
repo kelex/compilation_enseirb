@@ -8,7 +8,7 @@
 
 extern FILE * output;
 
-char * typeString[2];
+char * typeString[TYPE_SIZE];
 
 
 char * autoAlloc(const char * fmt, ...) {
@@ -46,7 +46,7 @@ void debugNode(struct node_t * n){
 		printf("STR(%s)\n",n->x.s);
 		break;
 		case VOID:
-		printf("VOID\n")
+		printf("VOID\n");
 		default:
 		printf("BUGGY\n");
 	}
