@@ -14,6 +14,7 @@ int exitError(char *s);
 
 
 	unsigned int N = 0;
+	type_t current_type  = VOID;
 
 	GHashTable *var_scope = NULL;
 	GHashTable *fun_scope = NULL;
@@ -150,12 +151,12 @@ assignment_operator
 
 declaration
 : type_name declarator_list ';' {
-									struct node_t * n = g_hash_table_lookup()
+									struct node_t * n = g_hash_table_lookup();
 								}
 ;
 
 declarator_list
-: declarator
+: declarator  {}
 | declarator_list ',' declarator
 ;
 
