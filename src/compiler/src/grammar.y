@@ -7,11 +7,19 @@
 
 	FILE * output;
 
+
 	int yylex ();
 	int yyerror ();
+int exitError(char *s);
+
+
+	unsigned int N = 0;
 
 	GHashTable *var_scope = NULL;
 	GHashTable *fun_scope = NULL;
+
+	GHashTable *const_torcs = NULL;
+
 
 %}
 
@@ -40,14 +48,32 @@
 %%
 
 primary_expression
-: IDENTIFIER									{$$=construct_node(STR);update_node($$,$1);}
-| CONSTANTI										{$$=construct_node(INTEGER);update_node($$,&$1);}
-| CONSTANTF	{$$=construct_node(REAL);update_node($$,&$1);}
-| '(' expression ')'	{$$=construct_node(STR);}
-| IDENTIFIER '(' ')'	{$$=construct_node(STR);}
-| IDENTIFIER '(' argument_expression_list ')'	{$$=construct_node(STR);}
-| IDENTIFIER INC_OP	{$$=construct_node(STR);}
-| IDENTIFIER DEC_OP	{$$=construct_node(STR);}
+: IDENTIFIER									{	struct node_t * tmp = g_hash_table_lookup(var_scope,$1);
+													if(!tmp){exitError("Unknown variable");};
+													$$ = construct_node(STR);
+													update_node($$,$1);
+
+
+													//$$->reg = tmp->reg;
+												}
+| CONSTANTI										{	$$=construct_node(INTEGER);
+													update_node($$,&$1);
+													$$->reg = N++;
+												}
+| CONSTANTF										{	$$=construct_node(REAL);
+													update_node($$,&$1);
+													$$->reg = N++;
+												}
+| '(' expression ')'							{	$$->code = autoAlloc("");
+												}
+| IDENTIFIER '(' ')'							{$$->code = autoAlloc("");
+												}
+| IDENTIFIER '(' argument_expression_list ')'	{$$->code = autoAlloc("");
+												}
+| IDENTIFIER INC_OP								{$$->code = autoAlloc("");
+												}
+| IDENTIFIER DEC_OP								{$$->code = autoAlloc("");
+												}
 ;
 
 postfix_expression
@@ -73,29 +99,46 @@ unary_operator
 
 multiplicative_expression
 : unary_expression	{$$=$1;}
-| multiplicative_expression '*' unary_expression	{$$=$3;delete_node($1);}
-| multiplicative_expression '/' unary_expression	{$$=$3;delete_node($1);}
+| multiplicative_expression '*' unary_expression	{$$=$3;}
+| multiplicative_expression '/' unary_expression	{$$=$3;}
 ;
 
 additive_expression
 : multiplicative_expression {$$=$1;}
-| additive_expression '+' multiplicative_expression	{$$=$1;delete_node($3);}
-| additive_expression '-' multiplicative_expression	{$$=$1;delete_node($3);}
+| additive_expression '+' multiplicative_expression	{$$=$1;}
+| additive_expression '-' multiplicative_expression	{$$=$1;}
 ;
 
 comparison_expression
 : additive_expression	{$$=$1;}
-| additive_expression '<' additive_expression	{$$ = $1;delete_node($3);}
-| additive_expression '>' additive_expression	{$$ = $1;delete_node($3);}
-| additive_expression LE_OP additive_expression	{$$ = $1;delete_node($3);}
-| additive_expression GE_OP additive_expression	{$$ = $1;delete_node($3);}
-| additive_expression EQ_OP additive_expression	{$$ = $1;delete_node($3);}
-| additive_expression NE_OP additive_expression	{$$ = $1;delete_node($3);}
+| additive_expression '<' additive_expression	{$$ = $1;}
+| additive_expression '>' additive_expression	{$$ = $1;}
+| additive_expression LE_OP additive_expression	{$$ = $1;}
+| additive_expression GE_OP additive_expression	{$$ = $1;}
+| additive_expression EQ_OP additive_expression	{$$ = $1;}
+| additive_expression NE_OP additive_expression	{$$ = $1;}
 ;
-
+//                                                                    store double  0x%8.8X, double* %%accelCmd\n
 expression
-: unary_expression assignment_operator comparison_expression {printNode($1,$3);delete_node($1);delete_node($3);}
-| comparison_expression {delete_node($1);}
+: unary_expression assignment_operator comparison_expression {
+				struct node_t * node = NULL;
+				char * val = NULL;
+				switch($1->type){
+					case STR:
+						node = g_hash_table_lookup(var_scope,$1->valStr);
+						val = g_hash_table_lookup(const_torcs,$1->valStr);
+						break;
+					case REAL:
+					case INTEGER:
+						node = $1;
+						val = $1->valStr;
+				}
+
+				if(!node) exitError("Variable doesn't exist");
+				fprintf(output,"store %s %s, %s* %s\n",typeString[node->type],$3->valStr,typeString[node->type],val);
+
+			}
+| comparison_expression {}
 ;
 
 assignment_operator
@@ -199,6 +242,7 @@ function_definition
 %%
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 
 extern int column;
 extern int yylineno;
@@ -211,6 +255,13 @@ int yyerror (char *s) {
 	fprintf (stderr, "%s:%d:%d: %s\n", file_name, yylineno, column, s);
 	return 0;
 }
+
+int exitError(char *s) {
+	yyerror(s);
+	exit(-1);
+}
+
+
 
 void header()
 {
@@ -265,7 +316,6 @@ void footer(){
 		fprintf(output," \n");
 	}
 
-
 /*
 	store float %%cangle, float* %%steer
 	store float 0.750000e+00, float* %%accelCmd
@@ -281,6 +331,7 @@ void usage(char * name){
 
 int main (int argc, char *argv[]) {
 	FILE *input = NULL;
+	_node_const_init();
 	output = NULL;
 	if (argc==3) {
 		input = fopen (argv[1], "r");
@@ -311,6 +362,15 @@ fun_scope = g_hash_table_new_full (g_str_hash,  /* Hash function  */
                            g_str_equal, /* Comparator     */
                            free,   /* Key destructor */
                            delete_node);  /* Val destructor */
+
+
+const_torcs = g_hash_table_new (g_str_hash,  /* Hash function  */
+                           g_str_equal); /* Val destructor */
+
+
+g_hash_table_insert(var_scope,autoAlloc("$accel"),construct_node(REAL));
+g_hash_table_insert(const_torcs,"$accel","%accelCmd");
+
 
 	header();
 	yyparse ();

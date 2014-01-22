@@ -1,11 +1,18 @@
 #ifndef _STRUCT_C_
 #define _STRUCT_C_
 
+#define TYPE_SIZE 2
+
+extern char* typeString[TYPE_SIZE];
+
+
+char * autoAlloc(const char * fmt, ...);
+
 typedef enum {
-	NODE,
-	INTEGER,
-	REAL,
-	STR
+	INTEGER = 0,
+	REAL = 1,
+	STR = 2,
+	NODE = 3,
 }type_t;
 
 struct node_t{
@@ -16,7 +23,8 @@ struct node_t{
 		char * s;
 	} x;
 	char * code;
-
+	char * valStr;
+	unsigned int reg;
 } node_t;
 
 

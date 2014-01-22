@@ -1,6 +1,6 @@
 LEX=lex
 YACC=yacc
-CFLAGS=-Wall
+CFLAGS=
 CC=gcc
 
 OBJ=./obj

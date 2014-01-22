@@ -3,10 +3,32 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-
+#include <stdarg.h>
 
 
 extern FILE * output;
+
+char * typeString[2];
+
+
+char * autoAlloc(const char * fmt, ...) {
+	char * err = NULL;
+	va_list args;
+	va_start(args,fmt);
+	size_t size = vsnprintf(NULL,0,fmt,args) + 1; // Put in NULL Pointer a max of 0 bytes, so vsnprintf returns the size needed.
+	err = calloc(1,size);
+	if(!err) return NULL; // error
+	vsnprintf(err,size,fmt,args);
+	va_end(args);
+
+	return err;
+	
+}
+
+void _node_const_init(){
+typeString[0] = "i32";
+typeString[1] = "double";
+}
 
 void debugNode(struct node_t * n){
 		switch(n->type){
@@ -54,34 +76,47 @@ void printNode(struct node_t * n1, struct node_t * n2){
 	}
 }
 
+
+
 void update_node(struct node_t * n, void * val){
+	if(n->valStr)
+		free(n->valStr);
+
 	switch(n->type){
-		case NODE:
+	case NODE:
 		n->x.s = (char * )val;
 		break;
-		case INTEGER:
-		n->x.i = *((int *)val);
-		break;
+	case INTEGER:
+		n->x.i = *((int *)val);	
+		n->valStr = autoAlloc("%d",n->x.i);
+	break;
 		case REAL:
 		n->x.f = *((float *)val);
+		n->valStr = autoAlloc("0x%8.8X",*((long*)&n->x.f));
 		break;
-		case STR:
+	case STR:
 		n->x.s = (char *) val;
+		n->valStr = n->x.s;
 		break;
-		default:;
+	default:;
 	}
 }
 
 void delete_node(struct node_t * n){
-	if(n->type == STR && n->type == NODE )
-		free(n->x.s);
+	if(n->valStr)
+		free(n->valStr);
+	if(n->code)
+		free(n->code);
 	free(n);
 }
+
 
 struct node_t * construct_node(type_t t){
 	// printf("CONSTRUCT NODE : %d\n",t );
 	struct node_t * new_node = malloc(sizeof(node_t));
 	new_node->type = t;
+	new_node->valStr = NULL;
+	new_node->code = NULL;
 	return new_node;
 
 }
