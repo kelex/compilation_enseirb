@@ -16,6 +16,14 @@ typedef enum {
 	NODE = 5,
 }type_t;
 
+typedef enum {
+	EQUAL = 0,
+	MUL = 1,
+	ADD = 2,
+	SUB = 3,
+	NO_OP = 4,
+}operator_t;
+
 struct node_t{
 	type_t type;
 	union {

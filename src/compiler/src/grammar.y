@@ -15,6 +15,7 @@ int exitError(char *s);
 
 	unsigned int N = 0;
 	type_t current_type  = EMPTY;
+	operator_t current_operator = NO_OP;
 
 	GHashTable *var_scope = NULL;
 	GHashTable *fun_scope = NULL;
@@ -132,8 +133,15 @@ expression
 					case REAL:
 					case INTEGER:
 						node = $1;
-						val = $1->valStr;
-						break;				
+						val = $1->valStr;			
+				}
+				switch(current_operator){
+					case EQUAL:
+						update_node($1,$3);
+						printf("EQUAL\n");
+						break;
+					default:
+						exitError("Operator not supported");
 				}
 				
 
@@ -145,10 +153,10 @@ expression
 ;
 
 assignment_operator
-: '='   {}
-| MUL_ASSIGN
-| ADD_ASSIGN
-| SUB_ASSIGN
+: '='   {current_operator = EQUAL;}
+| MUL_ASSIGN {current_operator = MUL;}
+| ADD_ASSIGN {current_operator = ADD;}
+| SUB_ASSIGN {current_operator = SUB;}
 ;
 
 declaration
