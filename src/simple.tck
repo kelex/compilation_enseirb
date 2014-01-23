@@ -1,8 +1,9 @@
 void driver()
 {
-    int a;
-    float c;    
+    int a,c,b;
     $accel = 1.0;
-    a = 2 * $accel;
+    b = 4;
+    a = 2 * b - 3;
         
+
 }

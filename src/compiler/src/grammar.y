@@ -11,10 +11,13 @@
 	int yylex ();
 	int yyerror ();
 int exitError(char *s);
+struct node_t *  construct_operation(struct node_t * n1,operator_t op, struct node_t * n2);
+void *  compute_operation(struct node_t * n1,operator_t op, struct node_t * n2);
 
 
 	unsigned int N = 0;
 	type_t current_type  = EMPTY;
+	operator_t current_operator = NO_OP;
 
 	GHashTable *var_scope = NULL;
 	GHashTable *fun_scope = NULL;
@@ -101,51 +104,15 @@ unary_operator
 multiplicative_expression
 : unary_expression	{$$=$1;}
 | multiplicative_expression '*' unary_expression	{
-			void * val = NULL;
-			struct node_t * n1 = NULL;
-			struct node_t * n2 = NULL;
-
-			if($1->type == STR)
-				n1 = g_hash_table_lookup(var_scope,$1->valStr);
-			else
-				n1 = $1;
-			if($3->type == STR)
-				n2 = g_hash_table_lookup(var_scope,$3->valStr);
-			else
-				n2 = $3;
-			if(!n1 || !n2)
-				exitError("Operation Mul : undefined var");
-			int r;
-			float f;
-			operation_t type = getTypeResult(n1,MUL,n2);
-			switch(type){
-				case INTEGER:
-					r = $1->x.i * $3->x.i;
-					val = &r;
-					break;
-				case REAL:
-					if($1->type == $3->type)
-						f = $1->x.f * $3->x.f;
-					else if($1->type == REAL)
-						f = $1->x.f * $3->x.i;
-					else
-						f = $1->x.i * $3->x.f;
-					val = &f;
-					break;
-				default:
-				printf("%d = %d,%d\n", type,n1->type,n2->type);
-					exitError("Multiplication of these types is prohibited.");
-			}
-			$$= construct_node(type);
-			update_node($$,&val);
+			$$ = construct_operation($1,MUL,$3);
 		}
-| multiplicative_expression '/' unary_expression	{$$=$3;}
+| multiplicative_expression '/' unary_expression	{$$=construct_operation($1,DIV,$3);}
 ;
 
 additive_expression
 : multiplicative_expression {$$=$1;}
-| additive_expression '+' multiplicative_expression	{$$=$1;}
-| additive_expression '-' multiplicative_expression	{$$=$1;}
+| additive_expression '+' multiplicative_expression	{$$=construct_operation($1,ADD,$3);}
+| additive_expression '-' multiplicative_expression	{$$=construct_operation($1,SUB,$3);}
 ;
 
 comparison_expression
@@ -173,27 +140,33 @@ expression
 						else
 							val = $1->valStr;
 						break;
-					case REAL:
-					case INTEGER:
-						node = $1;
-						val = $1->valStr;
-						break;				
+					default:
+						exitError("Variable token expected.");	
+				}
+
+				switch(current_operator){
+					case EQUAL:
+						update_node_from_node(node,$3);
+						printf("EQUAL\n");
+						break;
+					default:
+						exitError("Operator not supported");
 				}
 				
 
 				if(!node) exitError("Variable doesn't exist");
 				update_node_from_node(node,$3);
-				fprintf(output,"store %s %s, %s* %s\n",typeString[node->type],$3->valStr,typeString[node->type],val);
+				fprintf(output,"store %s %s, %s* %%%s\n",typeString[node->type],$3->valStr,typeString[node->type],val);
 
 			}
 | comparison_expression {}
 ;
 
 assignment_operator
-: '='   {}
-| MUL_ASSIGN
-| ADD_ASSIGN
-| SUB_ASSIGN
+: '='   {current_operator = EQUAL;}
+| MUL_ASSIGN {current_operator = MUL;}
+| ADD_ASSIGN {current_operator = ADD;}
+| SUB_ASSIGN {current_operator = SUB;}
 ;
 
 declaration
@@ -207,8 +180,12 @@ declarator_list
 : declarator    {if (current_type==EMPTY){
 					exitError("Void variable does not exist");
 				}
+				fprintf(output, "%%%s = alloca %s\n",$1->valStr,typeString[current_type] );
 				g_hash_table_insert(var_scope,$1->valStr,construct_node(current_type));}
-| declarator_list ',' declarator {g_hash_table_insert(var_scope,$3->valStr,construct_node(current_type));}
+| declarator_list ',' declarator {if (current_type==EMPTY){
+					exitError("Void variable does not exist");
+				}
+				fprintf(output, "%%%s = alloca %s\n",$3->valStr,typeString[current_type] );g_hash_table_insert(var_scope,$3->valStr,construct_node(current_type));}
 ;
 
 type_name
@@ -304,6 +281,28 @@ extern FILE *yyin;
 
 char *file_name = NULL;
 
+struct node_t *  construct_operation(struct node_t * n1,operator_t op, struct node_t * n2)
+{
+			void * val = NULL;
+			struct node_t * res = NULL;
+			if(n1->type == STR)
+				n1 = g_hash_table_lookup(var_scope,n1->valStr);
+			else
+				n1 = n1;
+			if(n2->type == STR)
+				n2 = g_hash_table_lookup(var_scope,n2->valStr);
+			else
+				n2 = n2;
+			if(!n1 || !n2)
+				exitError("Operation Mul : undefined var");
+			operator_t type = getTypeResult(n1,op,n2);
+
+			val = compute_operation(n1,op,n2);
+			res =  construct_node(type);
+			update_node(res,val);	/* data */
+			return res;
+}
+
 int yyerror (char *s) {
 	fflush (stdout);
 	fprintf (stderr, "%s:%d:%d: %s\n", file_name, yylineno, column, s);
@@ -315,8 +314,90 @@ int exitError(char *s) {
 	exit(-1);
 }
 
+void * compute_operation(struct node_t * n1,operator_t op, struct node_t * n2){
+	void * val = NULL;
+	int r;
+	int f;
 
-
+	if(n1->type > REAL || n2->type > REAL) exitError("Invalid type for this operation");
+	operator_t type = getTypeResult(n1,op,n2);
+	switch(op){
+		case MUL:
+			switch(type){
+				case INTEGER:
+					r = n1->x.i * n2->x.i;
+					val = &r;
+					break;
+				case REAL:
+					if(n1->type == n2->type)
+						f = n1->x.f * n2->x.f;
+					else if(n1->type == REAL)
+						f = n1->x.f * n2->x.i;
+					else
+						f = n1->x.i * n2->x.f;
+					val = &f;
+					break;
+				default:
+					exitError("Multiplication of these types is prohibited.");
+			}
+			break;
+		case ADD:
+			switch(type){
+				case INTEGER:
+					r = n1->x.i + n2->x.i;
+					val = &r;
+					break;
+				case REAL:
+					if(n1->type == n2->type)
+						f = n1->x.f + n2->x.f;
+					else if(n1->type == REAL)
+						f = n1->x.f + n2->x.i;
+					else
+						f = n1->x.i + n2->x.f;
+					val = &f;
+					break;
+				default:
+					exitError("Multiplication of these types is prohibited.");
+			}
+			break;
+		case SUB:
+			switch(type){
+				case INTEGER:
+					r = n1->x.i - n2->x.i;
+					val = &r;
+					break;
+				case REAL:
+					if(n1->type == n2->type)
+						f = n1->x.f - n2->x.f;
+					else if(n1->type == REAL)
+						f = n1->x.f - n2->x.i;
+					else
+						f = n1->x.i - n2->x.f;
+					val = &f;
+					break;
+				default:
+					exitError("Multiplication of these types is prohibited.");
+			}
+			break;
+		case DIV:
+			if(n1->type == n2->type){
+				if(n1->type == INTEGER && n2->x.i != 0)
+					f = n1->x.i / n2->x.i;
+				else if(n1->type == REAL && n2->x.f != 0.0)
+					f = n1->x.f / n2->x.f;
+			}
+			else if(n1->type == INTEGER && n2->x.f != 0.0)
+				f = n1->x.i / n2->x.f;
+			else if(n2->type == REAL && n2->x.i != 0)
+				f = n1->x.f / n2->x.i;
+			else
+				exitError("Issue during operation");
+			val = &f;
+			break;		
+		}
+	return val;
+}
+	
 void header()
 {
 	fprintf(output,"define void @drive(i32 %%index, %%struct.CarElt* %%car, %%struct.Situation* %%s) {\n");
@@ -422,7 +503,7 @@ const_torcs = g_hash_table_new (g_str_hash,  /* Hash function  */
 
 
 g_hash_table_insert(var_scope,autoAlloc("$accel"),construct_node(REAL));
-g_hash_table_insert(const_torcs,"$accel","%accelCmd");
+g_hash_table_insert(const_torcs,"$accel","accelCmd");
 
 
 	header();

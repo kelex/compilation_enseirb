@@ -10,6 +10,12 @@ extern FILE * output;
 
 char * typeString[TYPE_SIZE];
 
+void node_free_code(struct node_t * n){
+
+	if(!n->code) return;
+	free(n->code);
+	n->code = NULL;
+}
 
 char * autoAlloc(const char * fmt, ...) {
 	char * err = NULL;
@@ -119,7 +125,7 @@ void update_node_from_node(struct node_t * n1, struct node_t * n2){
 	}
 }
 
-type_t getTypeResult(struct node_t * n1,operation_t ope, struct node_t * n2){
+type_t getTypeResult(struct node_t * n1,operator_t ope, struct node_t * n2){
 	type_t t1 = n1->type;
 	type_t t2 = n2->type;
 	printf("n1 : %d, n2 : %d\n",t1,t2 );
@@ -143,11 +149,12 @@ type_t getTypeResult(struct node_t * n1,operation_t ope, struct node_t * n2){
 	}
 	return EMPTY;
 }
+
+
 void delete_node(struct node_t * n){
 	if(n->valStr)
 		free(n->valStr);
-	if(n->code)
-		free(n->code);
+	node_free_code(n);
 	free(n);
 }
 
