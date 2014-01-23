@@ -13,7 +13,7 @@
 int exitError(char *s);
 struct node_t *  construct_operation(struct node_t * n1,operator_t op, struct node_t * n2);
 void *  compute_operation(struct node_t * n1,operator_t op, struct node_t * n2);
-
+char * getVariableToken(struct node_t *);
 
 	unsigned int N = 0;
 	type_t current_type  = EMPTY;
@@ -56,19 +56,21 @@ primary_expression
 													if(!tmp){exitError("Unknown variable");};
 													$$ = construct_node(STR);
 													update_node($$,$1);
+													$$->code = autoAlloc("");
 
 
 													//$$->reg = tmp->reg;
 												}
 | CONSTANTI										{	$$=construct_node(INTEGER);
 													update_node($$,&$1);
-													$$->reg = N++;
+													$$->code = autoAlloc("");
 												}
 | CONSTANTF										{	$$=construct_node(REAL);
 													update_node($$,&$1);
-													$$->reg = N++;
+													$$->code = autoAlloc("");
 												}
-| '(' expression ')'							{	$$->code = autoAlloc("");
+| '(' expression ')'							{	
+													$$->code = autoAlloc("");
 												}
 | IDENTIFIER '(' ')'							{$$->code = autoAlloc("");
 												}
@@ -133,7 +135,6 @@ expression
 					case STR:
 						node = g_hash_table_lookup(var_scope,$1->valStr);
 						if(!node) break;
-							printf("%s\n",$1->valStr );
 						if($1->valStr[0] == '$'){
 							val = g_hash_table_lookup(const_torcs,$1->valStr);
 							if(!val) exitError("$ token is only for torcs variables");}
@@ -147,7 +148,11 @@ expression
 				switch(current_operator){
 					case EQUAL:
 						update_node_from_node(node,$3);
-						printf("EQUAL\n");
+						if($3->reg + 1)
+							fprintf(output,"store %s, %s* %%%s\n",typeString[node->type],$3->valStr,typeString[node->type],val);
+						else
+							fprintf(output,"%s\n%s\nstore %s, %s* %%%s\n",node->code,typeString[node->type],$3->reg,typeString[node->type],val);
+
 						break;
 					default:
 						exitError("Operator not supported");
@@ -155,8 +160,6 @@ expression
 				
 
 				if(!node) exitError("Variable doesn't exist");
-				update_node_from_node(node,$3);
-				fprintf(output,"store %s %s, %s* %%%s\n",typeString[node->type],$3->valStr,typeString[node->type],val);
 
 			}
 | comparison_expression {}
@@ -171,7 +174,6 @@ assignment_operator
 
 declaration
 : type_name declarator_list ';' {
-									printf("DECLARATION\n");
 									//struct node_t * n = g_hash_table_lookup();
 								}
 ;
@@ -281,25 +283,102 @@ extern FILE *yyin;
 
 char *file_name = NULL;
 
+char * getVariableToken(struct node_t * n){
+	if(n->type != STR) return NULL;
+	
+	char * val = NULL;
+
+
+	if(n->valStr[0] == '$'){
+		val = g_hash_table_lookup(const_torcs,n->valStr);
+		if(!val) exitError("$ token is only for torcs variables");
+	}
+	else
+		val = n->valStr;
+
+	return val;
+
+}
+
 struct node_t *  construct_operation(struct node_t * n1,operator_t op, struct node_t * n2)
 {
 			void * val = NULL;
 			struct node_t * res = NULL;
-			if(n1->type == STR)
-				n1 = g_hash_table_lookup(var_scope,n1->valStr);
-			else
-				n1 = n1;
-			if(n2->type == STR)
-				n2 = g_hash_table_lookup(var_scope,n2->valStr);
-			else
-				n2 = n2;
-			if(!n1 || !n2)
-				exitError("Operation Mul : undefined var");
-			operator_t type = getTypeResult(n1,op,n2);
+			struct node_t * node_1 = NULL;
+			struct node_t * node_2 = NULL;
 
-			val = compute_operation(n1,op,n2);
+			char * v1 = NULL;
+			char * v2 = NULL;
+
+			if(n1->type == STR){
+				node_1= g_hash_table_lookup(var_scope,n1->valStr);
+				if(node_1)
+					v1 = getVariableToken(n1);
+				
+
+			}
+			else
+				node_1 = n1;
+				
+			if(n2->type == STR){
+				node_2 = g_hash_table_lookup(var_scope,n2->valStr);
+				if(node_2)
+					v2 = getVariableToken(n2);
+			}
+			else
+					node_2 = n2;
+			
+			if(!node_1 || !node_2)
+				exitError("Operation Mul : undefined var");
+
+			operator_t type = getTypeResult(node_1,op,node_2);
 			res =  construct_node(type);
-			update_node(res,val);	/* data */
+
+			if((v1) && (v2)){
+				int r1,r2,r3;
+				r1 = N++;
+				r2 = N++;
+				r3 = N++;
+				res->code = autoAlloc("%s \n%s \n%%%d = load %s * %%%s \n%%%d = load %s * %%%s \n%%%d = %s %s %%%d,%%%d"
+									,n1->code,n2->code
+									,r1,typeString[node_1->type], v1
+									,r2,typeString[node_2->type], v2
+									,r3,operationString[type][op],typeString[type],r1,r2);
+				//res->reg = r3;
+			}
+			else if(v1){
+				int r1,r2;
+				r1=N++;
+				r2=N++;
+				res->code = autoAlloc("%s \n%s \n%%%d = load %s * %%%s \n%%%d = %s %s %%%d,%s"
+									,n1->code,n2->code
+									,r1,typeString[node_1->type],v1
+									,r2,operationString[type][op],typeString[type],r1,node_2->valStr);
+				res->reg = r2;
+			}
+			else if(v2){
+				int r1,r2;
+				r1=N++;
+				r2=N++;
+				res->code = autoAlloc("%s \n%s \n%%%d = load %s * %%%s \n%%%d = %s %s %s,%%%d"
+									,n1->code,n2->code
+									,r1,typeString[node_2->type],v2
+									,r2,operationString[type][op],typeString[type],node_1->valStr,r1);
+				res->reg = r2;
+			}
+			else{
+				val = compute_operation(n1,op,n2);
+				update_node(res,val);
+
+				int r1;
+				r1 = N++;
+				res->code = autoAlloc("%s \n%s \n%%%d = %s %s %s,0.0"
+									,n1->code,n2->code
+									,r1,operationString[type][ADD],typeString[type],res->valStr);
+				res->reg = r1;
+
+			}
+			printf("%s\n",res->code );
 			return res;
 }
 
@@ -315,9 +394,9 @@ int exitError(char *s) {
 }
 
 void * compute_operation(struct node_t * n1,operator_t op, struct node_t * n2){
-	void * val = NULL;
 	int r;
-	int f;
+	float f;
+	void * val = NULL;
 
 	if(n1->type > REAL || n2->type > REAL) exitError("Invalid type for this operation");
 	operator_t type = getTypeResult(n1,op,n2);
@@ -330,7 +409,7 @@ void * compute_operation(struct node_t * n1,operator_t op, struct node_t * n2){
 					break;
 				case REAL:
 					if(n1->type == n2->type)
-						f = n1->x.f * n2->x.f;
+						f = (n1->x.f * n2->x.f);
 					else if(n1->type == REAL)
 						f = n1->x.f * n2->x.i;
 					else

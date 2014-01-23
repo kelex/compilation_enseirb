@@ -2,8 +2,10 @@
 #define _STRUCT_C_
 
 #define TYPE_SIZE 3
+#define OPERATOR_SIZE 4
 
 extern char* typeString[TYPE_SIZE];
+extern char* operationString[TYPE_SIZE][OPERATOR_SIZE];
 
 
 char * autoAlloc(const char * fmt, ...);
@@ -17,12 +19,12 @@ typedef enum {
 }type_t;
 
 typedef enum {
-	EQUAL = 0,
-	MUL = 1,
-	DIV = 2,
-	ADD = 3,
-	SUB = 4,
-	NO_OP = 5,
+	MUL = 0,
+	DIV = 1,
+	ADD = 2,
+	SUB = 3,
+	NO_OP = 4,
+	EQUAL = 5,
 }operator_t;
 
 struct node_t{

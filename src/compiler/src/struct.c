@@ -9,6 +9,7 @@
 extern FILE * output;
 
 char * typeString[TYPE_SIZE];
+char * operationString[TYPE_SIZE][OPERATOR_SIZE];
 
 void node_free_code(struct node_t * n){
 
@@ -32,9 +33,29 @@ char * autoAlloc(const char * fmt, ...) {
 }
 
 void _node_const_init(){
-typeString[0] = "i32";
-typeString[1] = "double";
-typeString[2] = "void";
+typeString[INTEGER] = "i32";
+typeString[REAL] = "double";
+typeString[EMPTY] = "void";
+
+operationString[INTEGER][MUL] = "mul";
+operationString[REAL][MUL] = "fmul";
+operationString[EMPTY][MUL] = "";
+
+
+operationString[INTEGER][DIV] = "sdiv";
+operationString[REAL][DIV] = "fdiv";
+operationString[EMPTY][DIV] = "";
+
+
+operationString[INTEGER][ADD] = "add";
+operationString[REAL][ADD] = "fadd";
+operationString[EMPTY][ADD] = "";
+
+operationString[INTEGER][SUB] = "sub";
+operationString[REAL][SUB] = "fsub";
+operationString[EMPTY][SUB] = "";
+
+
 }
 
 void debugNode(struct node_t * n){
@@ -91,6 +112,9 @@ void update_node(struct node_t * n, void * val){
 	if(n->valStr)
 		free(n->valStr);
 
+	if(!val)
+		printf("NULL POINTEUR UPDATE !!!!!!!!!!!!!\n");
+
 	switch(n->type){
 	case NODE:
 		n->x.s = (char * )val;
@@ -100,6 +124,7 @@ void update_node(struct node_t * n, void * val){
 		n->valStr = autoAlloc("%d",n->x.i);
 	break;
 		case REAL:
+		
 		n->x.f = *((float *)val);
 		n->valStr = autoAlloc("0x%8.8X",*((long*)&n->x.f));
 		break;
@@ -128,7 +153,6 @@ void update_node_from_node(struct node_t * n1, struct node_t * n2){
 type_t getTypeResult(struct node_t * n1,operator_t ope, struct node_t * n2){
 	type_t t1 = n1->type;
 	type_t t2 = n2->type;
-	printf("n1 : %d, n2 : %d\n",t1,t2 );
 	switch(ope){
 		case ADD:
 		case SUB:
