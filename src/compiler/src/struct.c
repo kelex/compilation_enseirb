@@ -106,6 +106,43 @@ void update_node(struct node_t * n, void * val){
 	}
 }
 
+void update_node_from_node(struct node_t * n1, struct node_t * n2){
+	switch(n2->type){
+	case INTEGER:
+		update_node(n1, &(n2->x.i));
+		break;
+	case REAL:
+		update_node(n1, &(n2->x.f));
+		break;
+	default:
+		exit(-1);
+	}
+}
+
+type_t getTypeResult(struct node_t * n1,operation_t ope, struct node_t * n2){
+	type_t t1 = n1->type;
+	type_t t2 = n2->type;
+	printf("n1 : %d, n2 : %d\n",t1,t2 );
+	switch(ope){
+		case ADD:
+		case SUB:
+		case MUL:
+			if(t1 == t2)
+				return t1;
+			else if(t1 == REAL || t2 == REAL){
+				printf("COUCOU\n");
+				return REAL;}
+			else
+				return EMPTY;
+			break;
+		case DIV:
+			if((t1 == REAL || t1 == INTEGER) && (t2 == REAL || t2 == INTEGER))
+				return REAL;
+			return EMPTY;
+			break;
+	}
+	return EMPTY;
+}
 void delete_node(struct node_t * n){
 	if(n->valStr)
 		free(n->valStr);

@@ -28,10 +28,20 @@ struct node_t{
 	unsigned int reg;
 } node_t;
 
+typedef enum {
+	ADD = 0,
+	SUB = 1,
+	MUL = 2,
+	DIV = 3,
+	EQ = 4
+} operation_t;
 
+
+type_t getTypeResult(struct node_t * n1,operation_t op, struct node_t * n2);
 void debugNode(struct node_t * n);
 
 void printNode(struct node_t * n1, struct node_t * n2);
+void update_node_from_node(struct node_t * n1, struct node_t * n2);
 void update_node(struct node_t * n, void * val);
 void delete_node(struct node_t * n);
 struct node_t * construct_node(type_t t);

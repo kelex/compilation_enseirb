@@ -100,7 +100,45 @@ unary_operator
 
 multiplicative_expression
 : unary_expression	{$$=$1;}
-| multiplicative_expression '*' unary_expression	{$$=$3;}
+| multiplicative_expression '*' unary_expression	{
+			void * val = NULL;
+			struct node_t * n1 = NULL;
+			struct node_t * n2 = NULL;
+
+			if($1->type == STR)
+				n1 = g_hash_table_lookup(var_scope,$1->valStr);
+			else
+				n1 = $1;
+			if($3->type == STR)
+				n2 = g_hash_table_lookup(var_scope,$3->valStr);
+			else
+				n2 = $3;
+			if(!n1 || !n2)
+				exitError("Operation Mul : undefined var");
+			int r;
+			float f;
+			operation_t type = getTypeResult(n1,MUL,n2);
+			switch(type){
+				case INTEGER:
+					r = $1->x.i * $3->x.i;
+					val = &r;
+					break;
+				case REAL:
+					if($1->type == $3->type)
+						f = $1->x.f * $3->x.f;
+					else if($1->type == REAL)
+						f = $1->x.f * $3->x.i;
+					else
+						f = $1->x.i * $3->x.f;
+					val = &f;
+					break;
+				default:
+				printf("%d = %d,%d\n", type,n1->type,n2->type);
+					exitError("Multiplication of these types is prohibited.");
+			}
+			$$= construct_node(type);
+			update_node($$,&val);
+		}
 | multiplicative_expression '/' unary_expression	{$$=$3;}
 ;
 
@@ -127,7 +165,13 @@ expression
 				switch($1->type){
 					case STR:
 						node = g_hash_table_lookup(var_scope,$1->valStr);
-						val = g_hash_table_lookup(const_torcs,$1->valStr);
+						if(!node) break;
+							printf("%s\n",$1->valStr );
+						if($1->valStr[0] == '$'){
+							val = g_hash_table_lookup(const_torcs,$1->valStr);
+							if(!val) exitError("$ token is only for torcs variables");}
+						else
+							val = $1->valStr;
 						break;
 					case REAL:
 					case INTEGER:
@@ -138,6 +182,7 @@ expression
 				
 
 				if(!node) exitError("Variable doesn't exist");
+				update_node_from_node(node,$3);
 				fprintf(output,"store %s %s, %s* %s\n",typeString[node->type],$3->valStr,typeString[node->type],val);
 
 			}
