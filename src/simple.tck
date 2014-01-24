@@ -6,4 +6,7 @@ void driver()
     b = 4;
     a = 2;
     a = b++;
+
 }
+
+	void aze(int a){}

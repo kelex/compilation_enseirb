@@ -300,8 +300,12 @@ declarator
 				}
 | '(' declarator ')'				{$$ = construct_node(STR);update_node($$,$2);}
 | declarator '[' CONSTANTI ']'		{$$ = construct_node(STR);update_node($$,$1);}
-| declarator '[' ']'				{$$ = construct_node(STR);update_node($$,$1);}
-| declarator '(' parameter_list ')'	{$$ = construct_node(STR);update_node($$,$1);}
+| declarator '[' ']'		{
+								$$ = construct_node(STR);update_node($$,$1);
+							}
+| declarator '(' parameter_list ')'	{ // function declaration or call
+										$$ = construct_node(STR);update_node($$,$1);
+									}
 | declarator '(' ')'				{$$ = construct_node(STR);update_node($$,$1);}
 ;
 
