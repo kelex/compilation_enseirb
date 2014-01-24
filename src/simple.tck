@@ -2,10 +2,9 @@ void driver()
 {
     int a,b;
     float c;
-    $accel = 1.0;
+    $accel = 0.75;
     b = 4;
     a = 2;
-    c = 3.6 * 2.0;
-        
-
+    c = 3.60 * 2.0;
+    c = $accel * 2.3;
 }

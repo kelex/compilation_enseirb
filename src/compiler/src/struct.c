@@ -126,7 +126,7 @@ void update_node(struct node_t * n, void * val){
 		case REAL:
 		
 		n->x.f = *((float *)val);
-		n->valStr = autoAlloc("0x%8.8X",*((long*)&n->x.f));
+		n->valStr = autoAlloc("%f",n->x.f);//"0x%8.8X",*((long*)&n->x.f));
 		break;
 	case STR:
 		n->x.s = (char *) val;
@@ -189,6 +189,7 @@ struct node_t * construct_node(type_t t){
 	new_node->type = t;
 	new_node->valStr = NULL;
 	new_node->code = NULL;
+	new_node->reg = -1;
 	return new_node;
 
 }
