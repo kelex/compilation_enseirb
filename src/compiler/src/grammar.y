@@ -96,9 +96,7 @@ primary_expression
 								const_1 = construct_node(node->type);
 								update_node(const_1,p);
 								printf("%s\n",const_1->valStr );
-								$$ = construct_operation(tmp,ADD,const_1); delete_node(tmp);delete_node(const_1);
-								delete_node(tmp);
-								delete_node(const_1);
+								$$ = construct_operation(tmp,ADD,const_1);
 
 												}
 | IDENTIFIER DEC_OP								{//update_node_code($$,autoAlloc(""));								struct  node_t* node = NULL;
@@ -121,9 +119,7 @@ primary_expression
 								const_1 = construct_node(node->type);
 								update_node(const_1,p);
 								printf("%s\n",const_1->valStr );
-								$$ = construct_operation(tmp,SUB,const_1); delete_node(tmp);delete_node(const_1);
-								delete_node(tmp);
-								delete_node(const_1);
+								$$ = construct_operation(tmp,SUB,const_1);
 												}
 ;
 
@@ -156,7 +152,7 @@ unary_expression
 								const_1 = construct_node(node->type);
 								update_node(const_1,p);
 								printf("%s\n",const_1->valStr );
-								$$ = construct_operation($2,ADD,const_1); delete_node($2);delete_node(const_1);
+								$$ = construct_operation($2,ADD,const_1);
 
 
 							}
@@ -177,7 +173,7 @@ unary_expression
 								const_1 = construct_node(node->type);
 								update_node(const_1,p);
 								printf("%s\n",const_1->valStr );
-								$$ = construct_operation($2,SUB,const_1); delete_node($2);delete_node(const_1);}
+								$$ = construct_operation($2,SUB,const_1);}
 | unary_operator unary_expression	{								struct  node_t* node = NULL;
 								if($2->type != STR || !(node = g_hash_table_lookup(var_scope,$2->valStr))) exitError("Incrementation is ONLY for initialized variables");
 								struct node_t* const_1	= NULL;
@@ -194,7 +190,7 @@ unary_expression
 								const_1 = construct_node(node->type);
 								update_node(const_1,p);
 								printf("%s\n",const_1->valStr );
-								$$ = construct_operation($2,MUL,const_1); delete_node($2);delete_node(const_1);}
+								$$ = construct_operation($2,MUL,const_1);}
 ;
 
 unary_operator
@@ -204,15 +200,15 @@ unary_operator
 multiplicative_expression
 : unary_expression	{$$=$1;}
 | multiplicative_expression '*' unary_expression	{
-			$$ = construct_operation($1,MUL,$3); delete_node($1);delete_node($3);
+			$$ = construct_operation($1,MUL,$3);
 		}
-| multiplicative_expression '/' unary_expression	{$$=construct_operation($1,DIV,$3); delete_node($1);delete_node($3);}
+| multiplicative_expression '/' unary_expression	{$$=construct_operation($1,DIV,$3);}
 ;
 
 additive_expression
 : multiplicative_expression {$$=$1;}
-| additive_expression '+' multiplicative_expression	{$$=construct_operation($1,ADD,$3); delete_node($1);delete_node($3);}
-| additive_expression '-' multiplicative_expression	{$$=construct_operation($1,SUB,$3); delete_node($1);delete_node($3);}
+| additive_expression '+' multiplicative_expression	{$$=construct_operation($1,ADD,$3);}
+| additive_expression '-' multiplicative_expression	{$$=construct_operation($1,SUB,$3);}
 ;
 
 comparison_expression
@@ -253,10 +249,12 @@ expression
 						exitError("Operator not supported");
 				}
 				
+				delete_node($1);
+				delete_node($3);
 
 
 			}
-| comparison_expression {fprintf(output, "%s\n",$1->code);}
+| comparison_expression {fprintf(output, "%s\n",$1->code);delete_node($1);}
 ;
 
 assignment_operator
@@ -268,7 +266,8 @@ assignment_operator
 
 declaration
 : type_name declarator_list ';' {
-									fprintf(output,"%s",$2->code);//struct node_t * n = g_hash_table_lookup();
+									fprintf(output,"%s",$2->code);
+									delete_node($2); //struct node_t * n = g_hash_table_lookup();
 								}
 ;
 
@@ -283,6 +282,8 @@ declarator_list
 				if (current_type==EMPTY)	exitError("Void variable does not exist");
 				$$ = construct_node(NODE);
 				update_node_code($$,autoAlloc("%s%s",$1->code,$3->code));
+				delete_node($1);
+				delete_node($3);
 					//%%%s = alloca %s\n",$3->valStr,typeString[current_type] );g_hash_table_insert(var_scope,$3->valStr,construct_node(current_type));}
 			}
 ;
@@ -525,7 +526,13 @@ struct node_t *  construct_operation(struct node_t * n1,operator_t op, struct no
 				res->reg = r1;
 
 			}
+			if(castV1) free(castV1);
+			if(castV2) free(castV2);
+			castV1 = NULL;
+			castV2 = NULL;
 			printf("OPERATION REG %d : \n%s\n",res->reg,res->code );
+			delete_node(n1);
+			delete_node(n2);
 			return res;
 }
 
@@ -736,5 +743,8 @@ g_hash_table_insert(const_torcs,"$accel","accelCmd");
 	yyparse ();
 	footer();
 	free (file_name);
+	g_hash_table_destroy(var_scope);
+	g_hash_table_destroy(fun_scope);
+	g_hash_table_destroy(const_torcs);
 	return 0;
 }
