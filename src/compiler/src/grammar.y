@@ -380,44 +380,37 @@ struct node_t *  construct_operation(struct node_t * n1,operator_t op, struct no
 
 
 
+			char * castV1 = NULL;
+			char * castV2 = NULL;
 
-
-			if((v1) && (v2)){
-				char * castV1 = NULL;
-				char * castV2 = NULL;
-				int r1,r2,r3;
-				r1 = castedValue(&castV1,n1,type);
-				r2 = castedValue(&castV2,n2,type);
+			int r1,r2,r3;
+			r1 = castedValue(&castV1,n1,type);
+			r2 = castedValue(&castV2,n2,type);
+			if(castV1 && castV2) { // Double cast
 				r3 = N++;
-				if(!castV1 || !castV2) exitError("ISSUES DURING CASTING");
-
 				res->code = autoAlloc("%s%s%s%s\n%%%d = %s %s %%%d,%%%d\n" //%%%d = load %s * %%%s \n%%%d = load %s * %%%s 
-									,n1->code,n2->code
-									,castV1,castV2
-									//,r1,typeString[node_1->type], v1
-									//,r2,typeString[node_2->type], v2
-									,r3,operationString[type][op],typeString[type],r1,r2);
+										,n1->code,n2->code
+										,castV1,castV2
+										,r3,operationString[type][op],typeString[type],r1,r2);
 				res->reg = r3;
 			}
-			else if(v1){
-				int r1,r2;
-				r1=N++;
+			else if(castV1){
 				r2=N++;
-				res->code = autoAlloc("%s%s%%%d = load %s * %%%s \n%%%d = %s %s %%%d,%s\n"
-									,n1->code,n2->code
-									,r1,typeString[node_1->type],v1
-									,r2,operationString[type][op],typeString[type],r1,node_2->valStr);
+				res->code = autoAlloc("%s%s%s\n%%%d = %s %s %%%d,%s\n" //%%%d = load %s * %%%s \n%%%d = load %s * %%%s 
+										,n1->code,n2->code
+										,castV1
+										,r2,operationString[type][op],typeString[type],r1,node_2->valStr);
 				res->reg = r2;
 			}
-			else if(v2){
+			else if(castV2){
 				int r1,r2;
 				r1=N++;
-				r2=N++;
-				res->code = autoAlloc("%s%s%%%d = load %s * %%%s \n%%%d = %s %s %s,%%%d\n"
-									,n1->code,n2->code
-									,r1,typeString[node_2->type],v2
-									,r2,operationString[type][op],typeString[type],node_1->valStr,r1);
-				res->reg = r2;
+				res->code = autoAlloc("%s%s%s\n%%%d = %s %s %s,%%%d\n" //%%%d = load %s * %%%s \n%%%d = load %s * %%%s 
+										,n1->code,n2->code
+										,castV2
+										,r1,operationString[type][op],typeString[type],node_1->valStr,r2);
+				res->reg = r1;
+
 			}
 			else{
 				val = compute_operation(n1,op,n2);
