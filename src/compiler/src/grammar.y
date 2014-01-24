@@ -215,10 +215,10 @@ comparison_expression
 : additive_expression	{$$=$1;}
 | additive_expression '<' additive_expression	{$$ = construct_operation($1,INF,$3);}
 | additive_expression '>' additive_expression	{$$ = construct_operation($1,SUP,$3);}
-| additive_expression LE_OP additive_expression	{$$ = construct($1,INF_EQ_TO,$3);}
-| additive_expression GE_OP additive_expression	{$$ = construct($1,SUP_EQ_TO,$3);}
-| additive_expression EQ_OP additive_expression	{$$ = construct($1,EQUAL_TO,$3);}
-| additive_expression NE_OP additive_expression	{$$ = construct($1,DIFFERENT_OP,$3);}
+| additive_expression LE_OP additive_expression	{$$ = construct_operation($1,INF_EQ_TO,$3);}
+| additive_expression GE_OP additive_expression	{$$ = construct_operation($1,SUP_EQ_TO,$3);}
+| additive_expression EQ_OP additive_expression	{$$ = construct_operation($1,EQUAL_TO,$3);}
+| additive_expression NE_OP additive_expression	{$$ = construct_operation($1,DIFFERENT_OP,$3);}
 ;
 //                                                                    store double  0x%8.8X, double* %%accelCmd\n
 expression
@@ -344,7 +344,7 @@ expression_statement
 ;
 
 selection_statement
-: IF '(' expression ')' statement {if ($3->reg) {$$=$5}}
+: IF '(' expression ')' statement {}
 | IF '(' expression ')' statement ELSE statement {}
 | FOR '(' expression_statement expression_statement expression ')' statement {}
 ;
@@ -762,7 +762,7 @@ void * compute_operation(struct node_t * n1,operator_t op, struct node_t * n2){
 					
 			break;
 			}
-		case SUP_TO:
+		case SUP:
 			switch(type){
 				case INTEGER:
 					if (n1->x.i > n2->x.i)
@@ -796,7 +796,7 @@ void * compute_operation(struct node_t * n1,operator_t op, struct node_t * n2){
 					exitError("Issue during comparison ('superior to' op)");
 			break;
 			}
-		case INF_TO:
+		case INF:
 			switch(type){
 				case INTEGER:
 					if (n1->x.i < n2->x.i)
