@@ -303,7 +303,7 @@ char * getVariableToken(struct node_t * n){
 	return val;
 
 }
- int castToDouble(char ** n,struct node_t * n1, type_t t){
+ int castedValue(char ** n,struct node_t * n1, type_t t){
  	// char * castStr[TYPE_SIZE][TYPE_SIZE];
  	// castStr[INT][REAL] = "sitofp";
  	// castStr[REAL][INT] = "sitofp";
@@ -312,11 +312,14 @@ char * getVariableToken(struct node_t * n){
 	if(type != INTEGER && type != STR && type != REAL) return -1;
 	if(type == STR){
 		node = g_hash_table_lookup(var_scope,n1->valStr);
-		if(! node) exitError("UNdefined variable during cast");
-		if(t == REAL && type == INTEGER){
+		if(! node) exitError("Undefined variable during cast");
+		if(t == REAL && node->type == INTEGER){
+
 				int i = N++;
 				int j = N++;
-				*n = autoAlloc("%%%d = load %s * %%%s/n%%%d = sitofp %s %s to %s\n",i,n1->valStr,j,typeString[INTEGER],node->valStr,typeString[REAL]);
+				char * v1 = getVariableToken(n1);
+		printf("NODE t\n");
+				*n = autoAlloc("%%%d = load %s * %%%s\n%%%d = sitofp %s %%%d to %s\n",i,typeString[node->type], v1,j,typeString[INTEGER],i,typeString[REAL]);
 				return j;
 			}
 	}
@@ -328,13 +331,19 @@ char * getVariableToken(struct node_t * n){
 		*n = autoAlloc("%%%d = sitofp %s %s to %s\n",i,typeString[INTEGER],n1->valStr,typeString[REAL]);
 		return i;
 	}
-	else{
+	else if(type == STR){
 		int i = N++;
-		*n = autoAlloc("%%%d = load %s * %%%s/n",i,typeString[node->type],node->valStr);
+				char * v1 = getVariableToken(n1);
+
+		*n = autoAlloc("%%%d = load %s * %%%s\n",i,typeString[node->type],v1);
 		return i;
 	}
+	else
+		return -1;
 
 }
+
+
 struct node_t *  construct_operation(struct node_t * n1,operator_t op, struct node_t * n2)
 {
 			void * val = NULL;
@@ -368,25 +377,27 @@ struct node_t *  construct_operation(struct node_t * n1,operator_t op, struct no
 
 			operator_t type = getTypeResult(node_1,op,node_2);
 			res =  construct_node(type);
-			int reg1;
-			int reg2;
-			char * castV1 = NULL;
-			char * castV2 = NULL;
 
-			reg1 = castToDouble(&castV1,n1,type);
-			reg2 = castToDouble(&castV1,n2,type);
+
+
+
 
 			if((v1) && (v2)){
+				char * castV1 = NULL;
+				char * castV2 = NULL;
 				int r1,r2,r3;
-				r1 = N++;
-				r2 = N++;
+				r1 = castedValue(&castV1,n1,type);
+				r2 = castedValue(&castV2,n2,type);
 				r3 = N++;
-				res->code = autoAlloc("%s%s%%%d = load %s * %%%s \n%%%d = load %s * %%%s \n%%%d = %s %s %%%d,%%%d\n"
+				if(!castV1 || !castV2) exitError("ISSUES DURING CASTING");
+
+				res->code = autoAlloc("%s%s%s%s\n%%%d = %s %s %%%d,%%%d\n" //%%%d = load %s * %%%s \n%%%d = load %s * %%%s 
 									,n1->code,n2->code
-									,r1,typeString[node_1->type], v1
-									,r2,typeString[node_2->type], v2
+									,castV1,castV2
+									//,r1,typeString[node_1->type], v1
+									//,r2,typeString[node_2->type], v2
 									,r3,operationString[type][op],typeString[type],r1,r2);
-				//res->reg = r3;
+				res->reg = r3;
 			}
 			else if(v1){
 				int r1,r2;
