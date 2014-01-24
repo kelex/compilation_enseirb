@@ -56,29 +56,74 @@ primary_expression
 													if(!tmp){exitError("Unknown variable");};
 													$$ = construct_node(STR);
 													update_node($$,$1);
-													$$->code = autoAlloc("");
+													//update_node_code($$,autoAlloc(""));
 
 
 													//$$->reg = tmp->reg;
 												}
 | CONSTANTI										{	$$=construct_node(INTEGER);
 													update_node($$,&$1);
-													$$->code = autoAlloc("");
+													//update_node_code($$,autoAlloc(""));
 												}
 | CONSTANTF										{	$$=construct_node(REAL);
 													update_node($$,&$1);
-													$$->code = autoAlloc("");
+													//update_node_code($$,autoAlloc(""));
 												}
 | '(' expression ')'							{	
-													$$->code = autoAlloc("");
+													//update_node_code($$,autoAlloc(""));
 												}
-| IDENTIFIER '(' ')'							{$$->code = autoAlloc("");
+| IDENTIFIER '(' ')'							{//update_node_code($$,autoAlloc(""));
 												}
-| IDENTIFIER '(' argument_expression_list ')'	{$$->code = autoAlloc("");
+| IDENTIFIER '(' argument_expression_list ')'	{//update_node_code($$,autoAlloc(""));
 												}
-| IDENTIFIER INC_OP								{$$->code = autoAlloc("");
+| IDENTIFIER INC_OP								{//update_node_code($$,autoAlloc(""));
+								struct  node_t* node = NULL;
+
+								if(!(node = g_hash_table_lookup(var_scope,$1))) exitError("Incrementation is ONLY for initialized variables");
+								struct node_t* const_1	= NULL;
+								struct node_t* tmp	= construct_node(STR);
+								update_node(tmp,$1);
+								void * p = NULL;
+								if(node->type == INTEGER){
+									int  i = 1;
+									p = &i;
+								}
+								else {
+									float f = 1;
+									p = &f;
+								}
+								$$=construct_node(node->type);
+								const_1 = construct_node(node->type);
+								update_node(const_1,p);
+								printf("%s\n",const_1->valStr );
+								$$ = construct_operation(tmp,ADD,const_1); delete_node(tmp);delete_node(const_1);
+								delete_node(tmp);
+								delete_node(const_1);
+
 												}
-| IDENTIFIER DEC_OP								{$$->code = autoAlloc("");
+| IDENTIFIER DEC_OP								{//update_node_code($$,autoAlloc(""));								struct  node_t* node = NULL;
+								struct  node_t* node = NULL;
+	
+								if(!(node = g_hash_table_lookup(var_scope,$1))) exitError("Incrementation is ONLY for initialized variables");
+								struct node_t* const_1	= NULL;
+								struct node_t* tmp	= construct_node(STR);
+								update_node(tmp,$1);
+								void * p = NULL;
+								if(node->type == INTEGER){
+									int  i = 1;
+									p = &i;
+								}
+								else {
+									float f = 1;
+									p = &f;
+								}
+								$$=construct_node(node->type);
+								const_1 = construct_node(node->type);
+								update_node(const_1,p);
+								printf("%s\n",const_1->valStr );
+								$$ = construct_operation(tmp,SUB,const_1); delete_node(tmp);delete_node(const_1);
+								delete_node(tmp);
+								delete_node(const_1);
 												}
 ;
 
@@ -94,9 +139,62 @@ argument_expression_list
 
 unary_expression
 : postfix_expression	{$$=$1;}
-| INC_OP unary_expression	{$$=$2;}
-| DEC_OP unary_expression	{$$=$2;}
-| unary_operator unary_expression	{$$=$2;}
+| INC_OP unary_expression 	{
+								struct  node_t* node = NULL;
+								if($2->type != STR || !(node = g_hash_table_lookup(var_scope,$2->valStr))) exitError("Incrementation is ONLY for initialized variables");
+								struct node_t* const_1	= NULL;
+								void * p = NULL;
+								if(node->type == INTEGER){
+									int  i = 1;
+									p = &i;
+								}
+								else {
+									float f = 1;
+									p = &f;
+								}
+								$$=construct_node(node->type);
+								const_1 = construct_node(node->type);
+								update_node(const_1,p);
+								printf("%s\n",const_1->valStr );
+								$$ = construct_operation($2,ADD,const_1); delete_node($2);delete_node(const_1);
+
+
+							}
+| DEC_OP unary_expression	{
+								struct  node_t* node = NULL;
+								if($2->type != STR || !(node = g_hash_table_lookup(var_scope,$2->valStr))) exitError("Incrementation is ONLY for initialized variables");
+								struct node_t* const_1	= NULL;
+								void * p = NULL;
+								if(node->type == INTEGER){
+									int  i = 1;
+									p = &i;
+								}
+								else {
+									float f = 1;
+									p = &f;
+								}
+								$$=construct_node(node->type);
+								const_1 = construct_node(node->type);
+								update_node(const_1,p);
+								printf("%s\n",const_1->valStr );
+								$$ = construct_operation($2,SUB,const_1); delete_node($2);delete_node(const_1);}
+| unary_operator unary_expression	{								struct  node_t* node = NULL;
+								if($2->type != STR || !(node = g_hash_table_lookup(var_scope,$2->valStr))) exitError("Incrementation is ONLY for initialized variables");
+								struct node_t* const_1	= NULL;
+								void * p = NULL;
+								if(node->type == INTEGER){
+									int  i = -1;
+									p = &i;
+								}
+								else {
+									float f = -1;
+									p = &f;
+								}
+								$$=construct_node(node->type);
+								const_1 = construct_node(node->type);
+								update_node(const_1,p);
+								printf("%s\n",const_1->valStr );
+								$$ = construct_operation($2,MUL,const_1); delete_node($2);delete_node(const_1);}
 ;
 
 unary_operator
@@ -106,15 +204,15 @@ unary_operator
 multiplicative_expression
 : unary_expression	{$$=$1;}
 | multiplicative_expression '*' unary_expression	{
-			$$ = construct_operation($1,MUL,$3);
+			$$ = construct_operation($1,MUL,$3); delete_node($1);delete_node($3);
 		}
-| multiplicative_expression '/' unary_expression	{$$=construct_operation($1,DIV,$3);}
+| multiplicative_expression '/' unary_expression	{$$=construct_operation($1,DIV,$3); delete_node($1);delete_node($3);}
 ;
 
 additive_expression
 : multiplicative_expression {$$=$1;}
-| additive_expression '+' multiplicative_expression	{$$=construct_operation($1,ADD,$3);}
-| additive_expression '-' multiplicative_expression	{$$=construct_operation($1,SUB,$3);}
+| additive_expression '+' multiplicative_expression	{$$=construct_operation($1,ADD,$3); delete_node($1);delete_node($3);}
+| additive_expression '-' multiplicative_expression	{$$=construct_operation($1,SUB,$3); delete_node($1);delete_node($3);}
 ;
 
 comparison_expression
@@ -158,7 +256,7 @@ expression
 
 
 			}
-| comparison_expression {}
+| comparison_expression {fprintf(output, "%s\n",$1->code);}
 ;
 
 assignment_operator
@@ -184,7 +282,7 @@ declarator_list
 			{
 				if (current_type==EMPTY)	exitError("Void variable does not exist");
 				$$ = construct_node(NODE);
-				$$->code = autoAlloc("%s%s",$1->code,$3->code);
+				update_node_code($$,autoAlloc("%s%s",$1->code,$3->code));
 					//%%%s = alloca %s\n",$3->valStr,typeString[current_type] );g_hash_table_insert(var_scope,$3->valStr,construct_node(current_type));}
 			}
 ;
@@ -199,7 +297,7 @@ declarator
 : IDENTIFIER  	{
 					$$ = construct_node(STR);
 					update_node($$,$1);
-					$$->code =  autoAlloc("%%%s = alloca %s\n",$1,typeString[current_type] );
+					update_node_code($$, autoAlloc("%%%s = alloca %s\n",$1,typeString[current_type] ));
 					g_hash_table_insert(var_scope,$1,construct_node(current_type));
 				}
 | '(' declarator ')'				{$$ = construct_node(STR);update_node($$,$2);}
@@ -286,6 +384,9 @@ extern int yylineno;
 extern FILE *yyin;
 
 char *file_name = NULL;
+
+
+
 
 char * getVariableToken(struct node_t * n){
 	if(n->type != STR) return NULL;
@@ -388,27 +489,27 @@ struct node_t *  construct_operation(struct node_t * n1,operator_t op, struct no
 			r2 = castedValue(&castV2,n2,type);
 			if(castV1 && castV2) { // Double cast
 				r3 = N++;
-				res->code = autoAlloc("%s%s%s%s\n%%%d = %s %s %%%d,%%%d\n" //%%%d = load %s * %%%s \n%%%d = load %s * %%%s 
+				update_node_code(res,autoAlloc("%s%s%s%s\n%%%d = %s %s %%%d,%%%d\n" //%%%d = load %s * %%%s \n%%%d = load %s * %%%s 
 										,n1->code,n2->code
 										,castV1,castV2
-										,r3,operationString[type][op],typeString[type],r1,r2);
+										,r3,operationString[type][op],typeString[type],r1,r2));
 				res->reg = r3;
 			}
 			else if(castV1){
 				r2=N++;
-				res->code = autoAlloc("%s%s%s\n%%%d = %s %s %%%d,%s\n" //%%%d = load %s * %%%s \n%%%d = load %s * %%%s 
+				update_node_code(res,autoAlloc("%s%s%s\n%%%d = %s %s %%%d,%s\n" //%%%d = load %s * %%%s \n%%%d = load %s * %%%s 
 										,n1->code,n2->code
 										,castV1
-										,r2,operationString[type][op],typeString[type],r1,node_2->valStr);
+										,r2,operationString[type][op],typeString[type],r1,node_2->valStr));
 				res->reg = r2;
 			}
 			else if(castV2){
 				int r1,r2;
 				r1=N++;
-				res->code = autoAlloc("%s%s%s\n%%%d = %s %s %s,%%%d\n" //%%%d = load %s * %%%s \n%%%d = load %s * %%%s 
+				update_node_code(res,autoAlloc("%s%s%s\n%%%d = %s %s %s,%%%d\n" //%%%d = load %s * %%%s \n%%%d = load %s * %%%s 
 										,n1->code,n2->code
 										,castV2
-										,r1,operationString[type][op],typeString[type],node_1->valStr,r2);
+										,r1,operationString[type][op],typeString[type],node_1->valStr,r2));
 				res->reg = r1;
 
 			}
@@ -418,9 +519,9 @@ struct node_t *  construct_operation(struct node_t * n1,operator_t op, struct no
 
 				int r1;
 				r1 = N++;
-				res->code = autoAlloc("%s%s%%%d = %s %s %s,0.0\n"
+				update_node_code(res,autoAlloc("%s%s%%%d = %s %s %s,0.0\n"
 									,n1->code,n2->code
-									,r1,operationString[type][ADD],typeString[type],res->valStr);
+									,r1,operationString[type][ADD],typeString[type],res->valStr));
 				res->reg = r1;
 
 			}

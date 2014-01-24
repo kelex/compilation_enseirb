@@ -5,5 +5,5 @@ void driver()
     $accel = 0.75;
     b = 4;
     a = 2;
-    c = b + 1.0;
+    a = b++;
 }

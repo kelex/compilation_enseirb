@@ -182,13 +182,19 @@ void delete_node(struct node_t * n){
 	free(n);
 }
 
+void update_node_code(struct node_t * n, char * s){
+	if(!n->code || !s) return;
+	free(n->code);
+	n->code = s;
+}
+
 
 struct node_t * construct_node(type_t t){
 	// printf("CONSTRUCT NODE : %d\n",t );
 	struct node_t * new_node = malloc(sizeof(node_t));
 	new_node->type = t;
 	new_node->valStr = NULL;
-	new_node->code = NULL;
+	new_node->code = autoAlloc("");
 	new_node->reg = -1;
 	return new_node;
 
