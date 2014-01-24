@@ -213,12 +213,12 @@ additive_expression
 
 comparison_expression
 : additive_expression	{$$=$1;}
-| additive_expression '<' additive_expression	{$$ = $1;}
-| additive_expression '>' additive_expression	{$$ = $1;}
-| additive_expression LE_OP additive_expression	{$$ = $1;}
-| additive_expression GE_OP additive_expression	{$$ = $1;}
-| additive_expression EQ_OP additive_expression	{$$ = $1;}
-| additive_expression NE_OP additive_expression	{$$ = $1;}
+| additive_expression '<' additive_expression	{$$ = construct_operation($1,INF,$3);}
+| additive_expression '>' additive_expression	{$$ = construct_operation($1,SUP,$3);}
+| additive_expression LE_OP additive_expression	{$$ = construct_operation($1,INF_EQ_TO,$3);}
+| additive_expression GE_OP additive_expression	{$$ = construct_operation($1,SUP_EQ_TO,$3);}
+| additive_expression EQ_OP additive_expression	{$$ = construct_operation($1,EQUAL_TO,$3);}
+| additive_expression NE_OP additive_expression	{$$ = construct_operation($1,DIFFERENT_OP,$3);}
 ;
 //                                                                    store double  0x%8.8X, double* %%accelCmd\n
 expression
@@ -348,9 +348,9 @@ expression_statement
 ;
 
 selection_statement
-: IF '(' expression ')' statement
-| IF '(' expression ')' statement ELSE statement
-| FOR '(' expression_statement expression_statement expression ')' statement
+: IF '(' expression ')' statement {}
+| IF '(' expression ')' statement ELSE statement {}
+| FOR '(' expression_statement expression_statement expression ')' statement {}
 ;
 
 iteration_statement
@@ -625,7 +625,216 @@ void * compute_operation(struct node_t * n1,operator_t op, struct node_t * n2){
 			else
 				exitError("Issue during operation");
 			val = &f;
-			break;		
+			break;
+		case EQUAL_TO:
+			switch(type){
+				case INTEGER:
+					if (n1->x.i == n2->x.i)
+						r = 1;
+					else 
+						r = 0;
+					val = &r;
+					break;
+				case REAL:
+					if(n1->type == n2->type){
+						if (n1->x.f == n2->x.f)
+							f = 1;
+						else
+							f = 0;
+					}
+					else if(n1->type == REAL){
+						if (n1->x.f == n2->x.i)
+							f = 1;
+						else 
+							f = 0;
+					}
+					else {
+						if (n1->x.i == n2->x.f)
+							f = 1;
+						else 
+							f = 0;
+					}
+					val = &f;
+					break;
+				default:
+					exitError("Issue during comparison ('equal to' op)");
+					
+			break;
+			}
+		case DIFFERENT_OP:
+			switch(type){
+				case INTEGER:
+					if (n1->x.i != n2->x.i)
+						r = 1;
+					else 
+						r = 0;
+					val = &r;
+					break;
+				case REAL:
+					if(n1->type == n2->type){
+						if (n1->x.f != n2->x.f)
+							f = 1;
+						else
+							f = 0;
+					}
+					else if(n1->type == REAL){
+						if (n1->x.f != n2->x.i)
+							f = 1;
+						else 
+							f = 0;
+					}
+					else {
+						if (n1->x.i != n2->x.f)
+							f = 1;
+						else 
+							f = 0;
+					}
+					val = &f;
+					break;
+				default:
+					exitError("Issue during comparison ('different from' op)");
+					
+			break;
+			}
+		case SUP_EQ_TO:	
+			switch(type){
+				case INTEGER:
+					if (n1->x.i >= n2->x.i)
+						r = 1;
+					else 
+						r = 0;
+					val = &r;
+					break;
+				case REAL:
+					if(n1->type == n2->type){
+						if (n1->x.f >= n2->x.f)
+							f = 1;
+						else
+							f = 0;
+					}
+					else if(n1->type == REAL){
+						if (n1->x.f >= n2->x.i)
+							f = 1;
+						else 
+							f = 0;
+					}
+					else {
+						if (n1->x.i >= n2->x.f)
+							f = 1;
+						else 
+							f = 0;
+					}
+					val = &f;
+					break;
+				default:
+					exitError("Issue during comparison ('superior or equal to' op)");
+					
+			break;
+			}
+		case INF_EQ_TO:
+			switch(type){
+				case INTEGER:
+					if (n1->x.i <= n2->x.i)
+						r = 1;
+					else 
+						r = 0;
+					val = &r;
+					break;
+				case REAL:
+					if(n1->type == n2->type){
+						if (n1->x.f <= n2->x.f)
+							f = 1;
+						else
+							f = 0;
+					}
+					else if(n1->type == REAL){
+						if (n1->x.f <= n2->x.i)
+							f = 1;
+						else 
+							f = 0;
+					}
+					else {
+						if (n1->x.i <= n2->x.f)
+							f = 1;
+						else 
+							f = 0;
+					}
+					val = &f;
+					break;
+				default:
+					exitError("Issue during comparison ('inferior or equal to' op)");
+					
+			break;
+			}
+		case SUP:
+			switch(type){
+				case INTEGER:
+					if (n1->x.i > n2->x.i)
+						r = 1;
+					else 
+						r = 0;
+					val = &r;
+					break;
+				case REAL:
+					if(n1->type == n2->type){
+						if (n1->x.f > n2->x.f)
+							f = 1;
+						else
+							f = 0;
+					}
+					else if(n1->type == REAL){
+						if (n1->x.f > n2->x.i)
+							f = 1;
+						else 
+							f = 0;
+					}
+					else {
+						if (n1->x.i > n2->x.f)
+							f = 1;
+						else 
+							f = 0;
+					}
+					val = &f;
+					break;
+				default:
+					exitError("Issue during comparison ('superior to' op)");
+			break;
+			}
+		case INF:
+			switch(type){
+				case INTEGER:
+					if (n1->x.i < n2->x.i)
+						r = 1;
+					else 
+						r = 0;
+					val = &r;
+					break;
+				case REAL:
+					if(n1->type == n2->type){
+						if (n1->x.f < n2->x.f)
+							f = 1;
+						else
+							f = 0;
+					}
+					else if(n1->type == REAL){
+						if (n1->x.f < n2->x.i)
+							f = 1;
+						else 
+							f = 0;
+					}
+					else {
+						if (n1->x.i < n2->x.f)
+							f = 1;
+						else 
+							f = 0;
+					}
+					val = &f;
+					break;
+				default:
+					exitError("Issue during comparison ('inferior to' op)");
+			break;
+			}
+
 		}
 	return val;
 }

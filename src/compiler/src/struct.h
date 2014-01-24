@@ -25,6 +25,14 @@ typedef enum {
 	SUB = 3,
 	NO_OP = 4,
 	EQUAL = 5,
+	EQUAL_TO = 6,
+	SUP_EQ_TO = 7,
+	INF_EQ_TO = 8,
+	SUP = 9,
+	INF = 10,
+	INCREASE = 11,
+	DECREASE = 12,
+	DIFFERENT_OP = 13,
 }operator_t;
 
 struct node_t{
