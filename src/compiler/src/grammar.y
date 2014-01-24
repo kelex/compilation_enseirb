@@ -254,7 +254,7 @@ expression
 
 
 			}
-| comparison_expression {fprintf(output, "%s\n",$1->code);delete_node($1);}
+| comparison_expression {fprintf(output, "%s\n",$1->code);}
 ;
 
 assignment_operator
@@ -266,8 +266,7 @@ assignment_operator
 
 declaration
 : type_name declarator_list ';' {
-									fprintf(output,"%s",$2->code);
-									delete_node($2); //struct node_t * n = g_hash_table_lookup();
+									fprintf(output,"%s",$2->code);delete_node($2);//struct node_t * n = g_hash_table_lookup();
 								}
 ;
 
@@ -282,8 +281,6 @@ declarator_list
 				if (current_type==EMPTY)	exitError("Void variable does not exist");
 				$$ = construct_node(NODE);
 				update_node_code($$,autoAlloc("%s%s",$1->code,$3->code));
-				delete_node($1);
-				delete_node($3);
 					//%%%s = alloca %s\n",$3->valStr,typeString[current_type] );g_hash_table_insert(var_scope,$3->valStr,construct_node(current_type));}
 			}
 ;
@@ -528,8 +525,6 @@ struct node_t *  construct_operation(struct node_t * n1,operator_t op, struct no
 			}
 			if(castV1) free(castV1);
 			if(castV2) free(castV2);
-			castV1 = NULL;
-			castV2 = NULL;
 			printf("OPERATION REG %d : \n%s\n",res->reg,res->code );
 			delete_node(n1);
 			delete_node(n2);
@@ -743,8 +738,5 @@ g_hash_table_insert(const_torcs,"$accel","accelCmd");
 	yyparse ();
 	footer();
 	free (file_name);
-	g_hash_table_destroy(var_scope);
-	g_hash_table_destroy(fun_scope);
-	g_hash_table_destroy(const_torcs);
 	return 0;
 }
