@@ -293,6 +293,14 @@ declarator_list
 			{
 				if (current_type==EMPTY)	exitError("Void variable does not exist");
 				$$ = construct_node(NODE);
+				/* Doesn't work
+				GHashTable * aa= g_hash_table_new_full(g_str_hash,  // Hash function 
+                           g_str_equal, // Comparator    
+                           free,   // Key destructor 
+                           delete_node); // Val destructor 
+				stack_push(context,aa);
+				currentDepth++;
+				*/
 				update_node_code($$,autoAlloc("%s%s",$1->code,$3->code));
 					//%%%s = alloca %s\n",$3->valStr,typeString[current_type] );g_hash_table_insert(var_scope,$3->valStr,construct_node(current_type));}
 			}
@@ -342,7 +350,9 @@ statement
 compound_statement
 : '{' '}'
 | '{' statement_list '}'
-| '{' declaration_list statement_list '}'
+| '{' declaration_list statement_list '}' {
+	//currentDepth--;stack_pop(context); // ISSUE MALLOC
+}
 ;
 
 declaration_list
@@ -454,7 +464,6 @@ struct  node_t * findVariable(char * n){
 				int j = N++;
 				int contextDepth = 0;
 				char * v1 = getVariableToken(&contextDepth,n1);
-		printf("NODE t\n");
 				*n = autoAlloc("%%%d = load %s * %%%s%d\n%%%d = sitofp %s %%%d to %s\n",i,typeString[node->type], v1,contextDepth,j,typeString[INTEGER],i,typeString[REAL]);
 				return j;
 			}
@@ -565,7 +574,6 @@ struct node_t *  construct_operation(struct node_t * n1,operator_t op, struct no
 			}
 			if(castV1) free(castV1);
 			if(castV2) free(castV2);
-			printf("OPERATION REG %d : \n%s\n",res->reg,res->code );
 			delete_node(n1);
 			delete_node(n2);
 			return res;
@@ -980,6 +988,17 @@ const_torcs = g_hash_table_new (g_str_hash,  /* Hash function  */
 
 
 g_hash_table_insert(var_scope,autoAlloc("$accel"),construct_node(REAL));
+g_hash_table_insert(var_scope,autoAlloc("$x"),construct_node(REAL));
+g_hash_table_insert(var_scope,autoAlloc("$y"),construct_node(REAL));
+g_hash_table_insert(var_scope,autoAlloc("$z"),construct_node(REAL));
+g_hash_table_insert(var_scope,autoAlloc("$rmp"),construct_node(REAL));
+g_hash_table_insert(var_scope,autoAlloc("$gear"),construct_node(REAL));
+g_hash_table_insert(var_scope,autoAlloc("$speedx"),construct_node(REAL));
+g_hash_table_insert(var_scope,autoAlloc("$speedy"),construct_node(REAL));
+g_hash_table_insert(var_scope,autoAlloc("$speedz"),construct_node(REAL));
+g_hash_table_insert(var_scope,autoAlloc("$steer"),construct_node(REAL));
+g_hash_table_insert(var_scope,autoAlloc("$brake"),construct_node(REAL));
+g_hash_table_insert(var_scope,autoAlloc("$clutch"),construct_node(REAL));
 g_hash_table_insert(const_torcs,"$accel","accelCmd");
 
 context = stack_init(g_hash_table_destroy);

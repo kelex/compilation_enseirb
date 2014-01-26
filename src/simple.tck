@@ -1,11 +1,9 @@
 void driver()
 {
     int a,b;
+    $accel = 1;
     a = 1;
     b = 1;
-    if(a == b){
-
-    }
 
 }
 
