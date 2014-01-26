@@ -3,6 +3,7 @@
 	#include <stdlib.h>
 	#include <glib.h>
 	#include "./struct.h"
+	#include "./stack.h"
 	extern int yylineno;
 
 	FILE * output;
@@ -13,12 +14,15 @@
 int exitError(char *s);
 struct node_t *  construct_operation(struct node_t * n1,operator_t op, struct node_t * n2);
 void *  compute_operation(struct node_t * n1,operator_t op, struct node_t * n2);
-char * getVariableToken(struct node_t *);
+char * getVariableToken(int * c,struct node_t *);
 
 	unsigned int N = 1;
 	type_t current_type  = EMPTY;
 	operator_t current_operator = NO_OP;
 
+	int currentDepth = 0;
+
+	Kstack_t * context = NULL;
 	GHashTable *var_scope = NULL;
 	GHashTable *fun_scope = NULL;
 
@@ -52,7 +56,7 @@ char * getVariableToken(struct node_t *);
 %%
 
 primary_expression
-: IDENTIFIER									{	struct node_t * tmp = g_hash_table_lookup(var_scope,$1);
+: IDENTIFIER									{	struct node_t * tmp = findVariable($1);
 													if(!tmp){exitError("Unknown variable");};
 													$$ = construct_node(STR);
 													update_node($$,$1);
@@ -79,7 +83,7 @@ primary_expression
 | IDENTIFIER INC_OP								{//update_node_code($$,autoAlloc(""));
 								struct  node_t* node = NULL;
 
-								if(!(node = g_hash_table_lookup(var_scope,$1))) exitError("Incrementation is ONLY for initialized variables");
+								if(!(node = findVariable($1))) exitError("Incrementation is ONLY for initialized variables");
 								struct node_t* const_1	= NULL;
 								struct node_t* tmp	= construct_node(STR);
 								update_node(tmp,$1);
@@ -102,7 +106,7 @@ primary_expression
 | IDENTIFIER DEC_OP								{//update_node_code($$,autoAlloc(""));								struct  node_t* node = NULL;
 								struct  node_t* node = NULL;
 	
-								if(!(node = g_hash_table_lookup(var_scope,$1))) exitError("Incrementation is ONLY for initialized variables");
+								if(!(node = findVariable($1))) exitError("Incrementation is ONLY for initialized variables");
 								struct node_t* const_1	= NULL;
 								struct node_t* tmp	= construct_node(STR);
 								update_node(tmp,$1);
@@ -137,7 +141,7 @@ unary_expression
 : postfix_expression	{$$=$1;}
 | INC_OP unary_expression 	{
 								struct  node_t* node = NULL;
-								if($2->type != STR || !(node = g_hash_table_lookup(var_scope,$2->valStr))) exitError("Incrementation is ONLY for initialized variables");
+								if($2->type != STR || !(node = findVariable($2->valStr))) exitError("Incrementation is ONLY for initialized variables");
 								struct node_t* const_1	= NULL;
 								void * p = NULL;
 								if(node->type == INTEGER){
@@ -158,7 +162,7 @@ unary_expression
 							}
 | DEC_OP unary_expression	{
 								struct  node_t* node = NULL;
-								if($2->type != STR || !(node = g_hash_table_lookup(var_scope,$2->valStr))) exitError("Incrementation is ONLY for initialized variables");
+								if($2->type != STR || !(node = findVariable($2->valStr))) exitError("Incrementation is ONLY for initialized variables");
 								struct node_t* const_1	= NULL;
 								void * p = NULL;
 								if(node->type == INTEGER){
@@ -175,7 +179,7 @@ unary_expression
 								printf("%s\n",const_1->valStr );
 								$$ = construct_operation($2,SUB,const_1);}
 | unary_operator unary_expression	{								struct  node_t* node = NULL;
-								if($2->type != STR || !(node = g_hash_table_lookup(var_scope,$2->valStr))) exitError("Incrementation is ONLY for initialized variables");
+								if($2->type != STR || !(node = findVariable($2->valStr))) exitError("Incrementation is ONLY for initialized variables");
 								struct node_t* const_1	= NULL;
 								void * p = NULL;
 								if(node->type == INTEGER){
@@ -225,10 +229,11 @@ expression
 : unary_expression assignment_operator comparison_expression {
 				struct node_t * node = NULL;
 				char * val = NULL;
+				int contextDepth = -1;
 				switch($1->type){
 					case STR:
-						node = g_hash_table_lookup(var_scope,$1->valStr);
-						val = getVariableToken($1);
+						node = findVariable($1->valStr);
+						val = getVariableToken(&contextDepth,$1);
 						break;
 					default:
 						exitError("Variable token expected.");	
@@ -238,6 +243,14 @@ expression
 				switch(current_operator){
 					case EQUAL:
 						//update_node_from_node(node,$3);
+					if(contextDepth != -1){
+						if($3->reg == -1){
+							fprintf(output,"store %s %s, %s* %%%s%d\n",typeString[node->type],$3->valStr,typeString[node->type],val,contextDepth);
+						}
+						else
+							fprintf(output,"%s%sstore %s %%%d, %s* %%%s%d\n",$1->code,$3->code,typeString[node->type],$3->reg,typeString[node->type],val,contextDepth);
+					}
+					else
 						if($3->reg == -1){
 							fprintf(output,"store %s %s, %s* %%%s\n",typeString[node->type],$3->valStr,typeString[node->type],val);
 						}
@@ -295,7 +308,7 @@ declarator
 : IDENTIFIER  	{
 					$$ = construct_node(STR);
 					update_node($$,$1);
-					update_node_code($$, autoAlloc("%%%s = alloca %s\n",$1,typeString[current_type] ));
+					update_node_code($$, autoAlloc("%%%s%d = alloca %s\n",$1,currentDepth,typeString[current_type] ));
 					g_hash_table_insert(var_scope,$1,construct_node(current_type));
 				}
 | '(' declarator ')'				{$$ = construct_node(STR);update_node($$,$2);}
@@ -380,6 +393,7 @@ function_definition
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+	#include "./stack.h"
 
 extern int column;
 extern int yylineno;
@@ -390,22 +404,40 @@ char *file_name = NULL;
 
 
 
-char * getVariableToken(struct node_t * n){
+char * getVariableToken(int * c, struct node_t * n){
 	if(n->type != STR) return NULL;
 	
 	char * val = NULL;
+	*c = 0;
 
 
 	if(n->valStr[0] == '$'){
 		val = g_hash_table_lookup(const_torcs,n->valStr);
 		if(!val) exitError("$ token is only for torcs variables");
+		*c = -1;
 	}
-	else
+	else{
+		struct list_t * currentC = context->current;
+		while(currentC && !g_hash_table_lookup(currentC->data,n->valStr)){currentC = currentC->prev;*c = *c +1;}
+		if(!currentC) return NULL;
 		val = n->valStr;
+	}
 
 	return val;
 
 }
+
+struct  node_t * findVariable(char * n){
+	struct list_t * currentC = context->current;
+	struct node_t * node = NULL;
+
+	while(currentC && !(node = g_hash_table_lookup(currentC->data,n))){
+		currentC = currentC->prev;
+	}
+	return node;
+
+}
+
  int castedValue(char ** n,struct node_t * n1, type_t t){
  	// char * castStr[TYPE_SIZE][TYPE_SIZE];
  	// castStr[INT][REAL] = "sitofp";
@@ -414,15 +446,16 @@ char * getVariableToken(struct node_t * n){
  	struct node_t * node = NULL;
 	if(type != INTEGER && type != STR && type != REAL) return -1;
 	if(type == STR){
-		node = g_hash_table_lookup(var_scope,n1->valStr);
+		node = findVariable(n1->valStr);
 		if(! node) exitError("Undefined variable during cast");
 		if(t == REAL && node->type == INTEGER){
 
 				int i = N++;
 				int j = N++;
-				char * v1 = getVariableToken(n1);
+				int contextDepth = 0;
+				char * v1 = getVariableToken(&contextDepth,n1);
 		printf("NODE t\n");
-				*n = autoAlloc("%%%d = load %s * %%%s\n%%%d = sitofp %s %%%d to %s\n",i,typeString[node->type], v1,j,typeString[INTEGER],i,typeString[REAL]);
+				*n = autoAlloc("%%%d = load %s * %%%s%d\n%%%d = sitofp %s %%%d to %s\n",i,typeString[node->type], v1,contextDepth,j,typeString[INTEGER],i,typeString[REAL]);
 				return j;
 			}
 	}
@@ -436,9 +469,10 @@ char * getVariableToken(struct node_t * n){
 	}
 	else if(type == STR){
 		int i = N++;
-				char * v1 = getVariableToken(n1);
+		int contextDepth;
+		char * v1 = getVariableToken(&contextDepth,n1);
 
-		*n = autoAlloc("%%%d = load %s * %%%s\n",i,typeString[node->type],v1);
+		*n = autoAlloc("%%%d = load %s * %%%s%d\n",i,typeString[node->type],v1,contextDepth);
 		return i;
 	}
 	else
@@ -456,11 +490,13 @@ struct node_t *  construct_operation(struct node_t * n1,operator_t op, struct no
 
 			char * v1 = NULL;
 			char * v2 = NULL;
+			int context1 = -1;
+			int context2 = -1;
 
 			if(n1->type == STR){
-				node_1= g_hash_table_lookup(var_scope,n1->valStr);
+				node_1= findVariable(n1->valStr);
 				if(node_1)
-					v1 = getVariableToken(n1);
+					v1 = getVariableToken(&context1,n1);
 				
 
 			}
@@ -468,9 +504,9 @@ struct node_t *  construct_operation(struct node_t * n1,operator_t op, struct no
 				node_1 = n1;
 				
 			if(n2->type == STR){
-				node_2 = g_hash_table_lookup(var_scope,n2->valStr);
+				node_2 =  findVariable(n2->valStr);
 				if(node_2)
-					v2 = getVariableToken(n2);
+					v2 = getVariableToken(&context2,n2);
 			}
 			else
 					node_2 = n2;
@@ -946,7 +982,9 @@ const_torcs = g_hash_table_new (g_str_hash,  /* Hash function  */
 g_hash_table_insert(var_scope,autoAlloc("$accel"),construct_node(REAL));
 g_hash_table_insert(const_torcs,"$accel","accelCmd");
 
-
+context = stack_init(g_hash_table_destroy);
+stack_push(context,var_scope);
+stack_release(context);
 	header();
 	yyparse ();
 	footer();
