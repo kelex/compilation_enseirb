@@ -248,7 +248,7 @@ expression
 					default:
 						exitError("Operator not supported");
 				}
-				
+				//$$ = construct_node(node->type);
 				delete_node($1);
 				delete_node($3);
 
@@ -348,7 +348,7 @@ expression_statement
 ;
 
 selection_statement
-: IF '(' expression ')' statement {}
+: IF '(' expression ')' statement {}//{if ($3) {$$ = construct_node(STR); update_node($$,$5);}}
 | IF '(' expression ')' statement ELSE statement {}
 | FOR '(' expression_statement expression_statement expression ')' statement {}
 ;
